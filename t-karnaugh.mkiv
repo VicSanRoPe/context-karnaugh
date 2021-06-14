@@ -1,0 +1,48 @@
+%D \module
+%D   [     file=<filename>, % e.g. t-xxx
+%D      version=<module version>, % e.g. 20xx.xx.xx
+%D        title=<module title>, % e.g. \CONTEXT\ User Module
+%D     subtitle=<module subtitle>,
+%D       author=<author>,
+%D         date=<date>, % e.g. \currentdate
+%D    copyright=<copyright>, % e.g. <author>
+%D      license=<license>] % e.g. 'Public Domain' or 'GNU GPL 2.0'
+
+
+\registerctxluafile{t-karnaugh}{}
+%\ctxloadluafile{t-karnaugh}
+
+
+\unprotect
+
+
+\unexpanded\def\startkarnaugh{\dosingleempty\dostartkarnaugh}
+\unexpanded\def\dostartkarnaugh[#1]{
+	\ctxlua{thirddata.karnaugh.setup([==[#1]==])}}
+
+\unexpanded\def\stopkarnaugh{\ctxlua{thirddata.karnaugh.drawMap()}}
+
+
+\unexpanded\def\startkarnaughdata{\dostartbuffer[kndata] % Buffer name
+    [startkarnaughdata][stopkarnaughdata]} % Where it starts and stops
+\unexpanded\def\stopkarnaughdata{\ctxlua{
+	thirddata.karnaugh.data(buffers.getcontent('kndata'))}}
+
+
+\unexpanded\def\startkarnaughgroups{\dostartbuffer[kngroups]
+    [startkarnaughgroups][stopkarnaughgroups]}
+
+\unexpanded\def\stopkarnaughgroups{\ctxlua{
+	thirddata.karnaugh.groups(buffers.getcontent('kngroups'))}}
+
+
+\unexpanded\def\karnaughtabledata#1{\ctxlua{
+	thirddata.karnaugh.setTableData(
+		utilities.parsers.settings_to_array([==[#1]==]))}}
+
+
+\unexpanded\def\karnaughnote#1#2#3{\ctxlua{
+	thirddata.karnaugh.setNote([==[#1]==], [==[#2]==], [==[#3]==])}}
+
+
+\protect \endinput

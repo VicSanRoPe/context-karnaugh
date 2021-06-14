@@ -1,0 +1,77 @@
+\setuppapersize[A4]
+\setupbodyfont[10pt]
+\setupwhitespace[medium]
+\setupheadertexts[Testing][VicSanRoPe]
+\setupalign[nothyphenated, stretch, tolerant] % Eliminar guiones
+\setupheader[text][after=\hrule]
+\setuphead[section][style=\bfb, sectionstopper={.~}]
+\setuphead[subsection][style=\bfa]
+\setuphead[subsubsection][style=\bf]
+\setuphead[subsubsubsection][style=\bfx]
+\setupitemize[packed, nowhite]
+\setuppagenumbering[location=bottom]
+\setuplayout[width=fit, height=fit, margin=1.5cm,
+	topspace=1.6cm, bottomspace=1cm, backspace=3cm, cutspace=3cm,
+	header=1.3cm, headerdistance=5mm, footer=1.3cm, footerdistance=5mm]
+\setuplanguage[es][patterns={es}, date={day,{ de },month,{ de },year}]
+\mainlanguage [es]
+% Enlaces
+\setupinteraction[state=start,style=, color=]
+
+\usemodule[karnaugh]
+
+
+% Para las tablas ---------------------------------------------------
+\usemodule[database]
+\defineseparatedlist[TabTABLE][separator=tab,
+	left=\bTD,right=\eTD, first=\bTR,last=\eTR,
+	before=\bTABLE,after=\eTABLE]
+\setupTABLE[r][each][toffset=0mm, boffset=-0.4mm]
+\setupTABLE[c][each][align=middle]
+% -------------------------------------------------------------------
+
+
+\starttext
+
+
+\startkarnaugh[ny=4, nx=4, label=$f_{(I_0I_1I_2I_3)}$,
+	ylabels={$I_0$, $I_1$}, xlabels={$I_2$, $I_3$},
+	labelstyle=corner, groupstyle=pass, indices=no]
+
+%\startkarnaugh
+
+\startkarnaughdata
+1,	0,	0,	1,
+0,	1,	0,	0,
+0,	1,	1,	0,
+1,	0,	0,	1,
+\stopkarnaughdata
+
+%\karnaughtabledata{1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0}
+
+
+
+\startkarnaughgroups
+A,	,	,	A,
+,	B*,	BC*,	,
+,	B,	BC,	,
+A,	,	,	A*,
+\stopkarnaughgroups
+
+\karnaughnote{A}{$\overbar{I_1} \cdot \overbar{I_4}$}{b}
+\karnaughnote{B}{Note B}{lt}
+\karnaughnote{C}{Note C}{rb}
+
+\stopkarnaugh
+
+
+
+
+Hola
+
+
+
+
+
+
+\stoptext
