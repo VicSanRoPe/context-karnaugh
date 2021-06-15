@@ -191,7 +191,6 @@ function karnaugh.setNotes(content)
 			notes[y][x] = {}
 			local cell = content[(y-1) * kn.width + x]
 			for gr in cell:gmatch("(%u)%*") do
-				print("Group", gr)
 				notes[y][x][gr] = {"", ""}
 			end
 		end
@@ -213,7 +212,7 @@ function karnaugh.setGroups(content)
 		for x = 1, kn.width, 1 do
 			groups[y][x] = {}
 			groups[y][x].g = content[(y-1) * kn.width + x] -- Groups
-			groups[y][x].d = {} -- Directions for each group
+			groups[y][x].d = {} -- Directions for each cell, for each group
 		end
 	end
 	
@@ -237,6 +236,88 @@ function karnaugh.setGroups(content)
 						return nx[a:lower()] == b:lower() end)
 				end
 				kn.groups[y][x].d[gr] = arr
+			end
+		end
+	end
+
+
+
+
+
+
+	karnaugh.figureoutgroupconnections()
+end
+
+
+function karnaugh.figureoutgroupconnections()
+	local data , checked= {}, {}
+	--data["A"][1] = {{1, 2}, {2, 2}} -- {y, x}
+	--data["A"][2] = {{1, 2}, {2, 2}}
+	--group ^ | ^ detached part | ^ all cells that have that part
+	--data["A"][1][2] = {2, 2}
+	--   an index  ^   |   ^ coordinates
+
+	-- This stores all cells that form a detached part of a group
+	-- and (just for itself) all the cells where it has looked
+	function getPart(gr, id, y, x)
+		function check(gr, id, y, x, yf, xf)
+			local ys, xs = y + yf, x + xf
+			if ys > kn.height then ys = 1
+				elseif ys == 0 then ys = kn.height end
+			if xs > kn.width then xs = 1
+				elseif xs == 0 then xs = kn.width end
+
+			for i=1, #checked[gr][id], 1 do
+				if checked[gr][id][i][1] == ys and
+						checked[gr][id][i][2] == xs then
+					return nil, nil end
+			end
+			checked[gr][id][#checked[gr][id]+1] = {ys, xs}
+
+			if kn.groups[ys][xs].g:match(gr) then
+				data[gr][id][#data[gr][id]+1] = {ys, xs}
+				return ys, xs
+			end
+			return nil, nil
+		end
+
+		local ys, xs
+		ys, xs = check(gr, id, y, x, 0, -1) -- Left
+		if ys and xs then getPart(gr, id, ys, xs) end
+		ys, xs = check(gr, id, y, x, 0, 1) -- Right
+		if ys and xs then getPart(gr, id, ys, xs) end
+		ys, xs = check(gr, id, y, x, -1, 0) -- Top
+		if ys and xs then getPart(gr, id, ys, xs) end
+		ys, xs = check(gr, id, y, x, 1, 0) -- Bottom
+		if ys and xs then getPart(gr, id, ys, xs) end
+	end
+
+
+	for y = 1, kn.height, 1 do
+		for x = 1, kn.width, 1 do
+			for gr in kn.groups[y][x].g:characters() do
+				if not data[gr] then -- First time seeing a group
+					data[gr], checked[gr] = {}, {}
+					local id = 1
+					data[gr][id], checked[gr][id] = {}, {}
+					getPart(gr, id, y, x)
+				else -- We'll have to look at all parts of the group
+					--  to see if this cell is not yet indexed
+					local haveISeenIt = false    -- Assume it's new
+					for id = 1, #data[gr] do           -- All parts
+						for i = 1, #data[gr][id], 1 do -- All cells
+							if data[gr][id][i][1] == y and
+									data[gr][id][i][2] == x then
+								haveISeenIt = true
+							end
+						end
+					end
+					if not haveISeenIt then -- New part of group
+						local id = #data[gr]+1
+						data[gr][id], checked[gr][id] = {}, {}
+						getPart(gr, id, y, x)
+					end
+				end
 			end
 		end
 	end
@@ -296,9 +377,13 @@ end
 
 
 
+
 ---------------------------------------------------------------------
+
                         --DRAWING FUNCTIONS--
+
 ---------------------------------------------------------------------
+
 
 
 
@@ -343,9 +428,11 @@ function karnaugh.drawGrid()
 				kn.hVars[#kn.hVars-i+1], 0.5*i+0.2, 0.5*i-0.1)
 		end
 
-		-- Map's label
-		metafun([[label.top(btex %s etex, (%s*size, 0.8size));]],
-			kn.label, kn.width/2)
+		if kn.label then
+			-- Map's label
+			metafun([[label.top(btex %s etex, (%s*size, 0.8size));]],
+				kn.label, kn.width/2)
+		end
 
 	elseif kn.labelStyle == "edge" then
 		local str = ""
@@ -358,9 +445,11 @@ function karnaugh.drawGrid()
 		metafun([[draw thelabel.top(btex {%s} etex, (0, 0))
 			rotated(90) shifted(-%s*size, %s*size);]],
 			str, (0.4+#kn.vVars/4), -kn.height/2)
-
-		-- Map's label
-		metafun([[label.ulft(btex %s etex, (-0.2size, 0.2size));]], kn.label)
+		if kn.label then
+			-- Map's label
+			metafun([[label.ulft(btex %s etex, (-0.2size, 0.2size));]],
+				kn.label)
+		end
 	end
 	
 	-- Grid
@@ -448,10 +537,9 @@ local p = { -- Clockwise i initial f final
 }
 
 
-function karnaugh.image(arg)
+function karnaugh.groupPath(arg)
 	local op = {["t"] = "b", ["b"] = "t", ["l"] = "r", ["r"] = "l"} -- Other
 	local nx = {["t"] = "l", ["r"] = "t", ["b"] = "r", ["l"] = "b"} -- Next
-	local t = [[withtransparency("darken", 0.85) ]]
 
 	local a1, a2, a3
 	if kn.groupStyle == "pass" then
@@ -466,37 +554,30 @@ function karnaugh.image(arg)
 
 	if a3 then
 		local mid = op[a2:lower()]
-		return "draw ("..p[a1.."i"]..p[mid]..p[a3.."f"]..")"
+		return {p[a1.."i"] .. p[mid] .. p[a3.."f"]}
 	elseif a2 then
 		if a1:lower() ~= op[a2:lower()] then --Corners
-			return "draw ("..p[a1.."i"]
-				.. p[op[a2:lower()]]..".."..p[op[a1:lower()]]
-				.. p[a2.."f"]..")"
+			return {p[a1.."i"] .. p[op[a2:lower()]] .. ".."
+				.. p[op[a1:lower()]] .. p[a2.."f"]}
 		else -- Tubes
 			local mid = nx[a2:lower()]
-			return "draw image(draw("
-				.. p[a1.."i"]..p[mid]..p[a2.."f"]..")"..t.."; draw("
-				.. p[a2.."i"]..p[op[mid]]..p[a1.."f"]..")"..t..";)"
+			return {p[a1.."i"] .. p[mid] .. p[a2.."f"],
+				    p[a2.."i"] .. p[op[mid]] .. p[a1.."f"]}
 		end
 	elseif a1 then
 		if a1 ~= "h" then -- Halves
 			local ch = a1:lower()
-			return "draw ("..p[a1.."i"]..p[op[nx[ch]]]..".."
-				.. p[op[ch]]..".."..p[nx[ch]]
-				.. p[a1.."f"]..")"
+			return {p[a1.."i"] .. p[op[nx[ch]]] .. ".."
+				.. p[op[ch]] .. ".." .. p[nx[ch]] .. p[a1.."f"]}
 		else -- Circle
-			return "draw ("..p["t"]..".."..p["r"]..".."
-				.. p["b"]..".."..p["l"].."..cycle)"
+			return {p["t"]..".."..p["r"]..".."
+				.. p["b"]..".."..p["l"].."..cycle"}
 		end
 	end
 end
 
 
-
-
 function karnaugh.drawGroups()
-	-- Less to write
-	-- The groups connect better with these
 	metafun([[pickup pencircle scaled(0.4mm);]])
 	metafun([[interim linecap := squared;]])
 	
@@ -505,22 +586,26 @@ function karnaugh.drawGroups()
 	for y = 1, kn.height, 1 do
 		for x = 1, kn.width, 1 do
 			for gr, dir in pairs(kn.groups[y][x].d) do
-				arr[gr] = arr[gr] or ""
-				arr[gr] = arr[gr] ..
-					string.format(kn.image(dir)..kn.shift..kn.color..";",
-					x, y, kn.colors[gr])
+				if #dir ~= 4 then -- There is something to draw
+					arr[gr] = arr[gr] or ""
+					local paths = kn.groupPath(dir)
+					for i=1, #paths, 1 do
+						arr[gr] = arr[gr] .. string.format("draw ("..
+							paths[i]..") "..kn.shift..kn.color..";",
+							x, y, kn.colors[gr])
+					end
+				end
 			end
 		end
 	end
 
-	for gr, str in pairs(arr) do
+	for gr, str in pairs(arr) do -- To draw all cells of a group at once
 		metafun(str)
 	end
 end
 
 
 function karnaugh.drawNotes()
-	--metafun([[label.top(btex {%s} etex, (%s*size, %s*size));]], v[2], x, 1)
 	for y = 1, kn.height, 1 do
 		for x = 1, kn.width, 1 do
 			for gr, v in pairs(kn.notes[y][x]) do
