@@ -170,16 +170,44 @@ end
 
 
 function karnaugh.groups(buffer)
-	local dirArr = utilities.parsers.settings_to_array(buffer)
-	local grArr = {}
-	for i=1, #dirArr, 1 do
-		-- Remove leading and trailing spaces
-		dirArr[i] = dirArr[i]:gsub("^%s+", ""):gsub("%s+$", "")
-		grArr[i]  = dirArr[i]:gsub("%*", "")  -- Remove asterisks
+	local arr = utilities.parsers.settings_to_array(buffer)
+	local grArr, labelArr, sConnArr, dConnArr = {}, {}, {}, {}
+	for i=1, #arr, 1 do
+		arr[i] = arr[i]:gsub("%s", "")     -- Remove all spaces
+		labelArr[i] = arr[i]:gsub("[^%u%*]", "") -- Leave the asterisks
+		dConnArr[i] = arr[i]:gsub("[^%u%-]", "") -- Leave the dashes
+		sConnArr[i] = arr[i]:gsub("[^%u%+]", "") -- Leave the pluses
+		grArr[i]    = arr[i]:gsub("[^%u]", "")   -- Just Letters
 	end
 	kn.setGroups(grArr) -- Just the letters
+	kn.setNotes(labelArr) -- Letters and asterisks
+	kn.setConnections(dConnArr, sConnArr) -- Letters and dashes/pluses
+end
 
-	kn.setNotes(dirArr) -- Letters and asterisks
+
+function karnaugh.setConnections(dConnArr, sConnArr)
+	if #dConnArr == 0 or #sConnArr == 0 then
+		return false
+	end
+
+	local conns = {}
+	for y = 1, kn.height, 1 do
+		for x = 1, kn.width, 1 do
+			local cell = dConnArr[(y-1) * kn.width + x]
+			for gr in cell:gmatch("(%u)%-") do
+				conns[gr] = conns[gr] or {}
+				conns[gr].dst = conns[gr].dst or {}
+				conns[gr].dst[#conns[gr].dst+1] = {oy=y, ox=x}
+			end
+			local cell = sConnArr[(y-1) * kn.width + x]
+			for gr in cell:gmatch("(%u)%+") do
+				conns[gr] = conns[gr] or {}
+				conns[gr].src = {y=y, x=x}
+			end
+		end
+	end
+
+	karnaugh.conns = conns
 end
 
 
@@ -212,7 +240,7 @@ function karnaugh.setGroups(content)
 		for x = 1, kn.width, 1 do
 			groups[y][x] = {}
 			groups[y][x].g = content[(y-1) * kn.width + x] -- Groups
-			groups[y][x].d = {} -- Directions for each cell, for each group
+			groups[y][x].d = {} -- Directions for each cell and group
 		end
 	end
 	
@@ -239,99 +267,14 @@ function karnaugh.setGroups(content)
 			end
 		end
 	end
-
-
-
-
-
-
-	karnaugh.figureoutgroupconnections()
-end
-
-
-function karnaugh.figureoutgroupconnections()
-	local data , checked= {}, {}
-	--data["A"][1] = {{1, 2}, {2, 2}} -- {y, x}
-	--data["A"][2] = {{1, 2}, {2, 2}}
-	--group ^ | ^ detached part | ^ all cells that have that part
-	--data["A"][1][2] = {2, 2}
-	--   an index  ^   |   ^ coordinates
-
-	-- This stores all cells that form a detached part of a group
-	-- and (just for itself) all the cells where it has looked
-	function getPart(gr, id, y, x)
-		function check(gr, id, y, x, yf, xf)
-			local ys, xs = y + yf, x + xf
-			if ys > kn.height then ys = 1
-				elseif ys == 0 then ys = kn.height end
-			if xs > kn.width then xs = 1
-				elseif xs == 0 then xs = kn.width end
-
-			for i=1, #checked[gr][id], 1 do
-				if checked[gr][id][i][1] == ys and
-						checked[gr][id][i][2] == xs then
-					return nil, nil end
-			end
-			checked[gr][id][#checked[gr][id]+1] = {ys, xs}
-
-			if kn.groups[ys][xs].g:match(gr) then
-				data[gr][id][#data[gr][id]+1] = {ys, xs}
-				return ys, xs
-			end
-			return nil, nil
-		end
-
-		local ys, xs
-		ys, xs = check(gr, id, y, x, 0, -1) -- Left
-		if ys and xs then getPart(gr, id, ys, xs) end
-		ys, xs = check(gr, id, y, x, 0, 1) -- Right
-		if ys and xs then getPart(gr, id, ys, xs) end
-		ys, xs = check(gr, id, y, x, -1, 0) -- Top
-		if ys and xs then getPart(gr, id, ys, xs) end
-		ys, xs = check(gr, id, y, x, 1, 0) -- Bottom
-		if ys and xs then getPart(gr, id, ys, xs) end
-	end
-
-
-	for y = 1, kn.height, 1 do
-		for x = 1, kn.width, 1 do
-			for gr in kn.groups[y][x].g:characters() do
-				if not data[gr] then -- First time seeing a group
-					data[gr], checked[gr] = {}, {}
-					local id = 1
-					data[gr][id], checked[gr][id] = {}, {}
-					getPart(gr, id, y, x)
-				else -- We'll have to look at all parts of the group
-					--  to see if this cell is not yet indexed
-					local haveISeenIt = false    -- Assume it's new
-					for id = 1, #data[gr] do           -- All parts
-						for i = 1, #data[gr][id], 1 do -- All cells
-							if data[gr][id][i][1] == y and
-									data[gr][id][i][2] == x then
-								haveISeenIt = true
-							end
-						end
-					end
-					if not haveISeenIt then -- New part of group
-						local id = #data[gr]+1
-						data[gr][id], checked[gr][id] = {}, {}
-						getPart(gr, id, y, x)
-					end
-				end
-			end
-		end
-	end
 end
 
 
 function karnaugh.processGroup(gr, y, x, yf, xf, ch)
 	function offset(v, vf, lim)
 		vs = v + vf
-		if vs > lim then
-			return 1, true
-		elseif vs == 0 then
-			return lim, true
-		end
+		if vs > lim then return 1, true
+		elseif vs == 0 then return lim, true end
 		return vs, false
 	end
 
@@ -347,8 +290,8 @@ function karnaugh.processGroup(gr, y, x, yf, xf, ch)
 			local ys, xs, timesFound, timesLooped = y, x, 0, 0
 			repeat
 				timesLooped = timesLooped + 1
-				ys, overY = offset(ys, -yf, kn.height) -- Look for groups in
-				xs, overX = offset(xs, -xf, kn.width)  -- the other direction
+				ys, overY = offset(ys, -yf, kn.height) -- Look the
+				xs, overX = offset(xs, -xf, kn.width)  -- other way
 				if string.find(kn.groups[ys][xs].g, gr) then
 					timesFound = timesFound + 1
 				end
@@ -366,7 +309,7 @@ function karnaugh.setNote(gr, note, dir)
 		for x = 1, kn.width, 1 do
 			for g, v in pairs(kn.notes[y][x]) do
 				if (gr == g) then
-					dir = dir:gsub("%s+", "") -- Remove spaces
+					dir = dir:gsub("%s+", "") -- Remove all spaces
 					kn.notes[y][x][g][1] = dir
 					kn.notes[y][x][g][2] = note
 				end
@@ -398,6 +341,9 @@ function karnaugh.drawMap()
 	karnaugh.drawData()
 	if kn.groups then
 		karnaugh.drawGroups()
+		if kn.conns then
+			karnaugh.drawConnections()
+		end
 	end
 	if kn.notes then
 		karnaugh.drawNotes()
@@ -599,8 +545,62 @@ function karnaugh.drawGroups()
 		end
 	end
 
-	for gr, str in pairs(arr) do -- To draw all cells of a group at once
+	for gr, str in pairs(arr) do -- Draw all cells of a group at once
 		metafun(str)
+	end
+end
+
+
+function karnaugh.drawConnections()
+	metafun([[interim linecap := rounded;]])
+	-- For every group that has connections
+	for gr, data in pairs(kn.conns) do
+		-- There can be many destinations
+		for i, coor in pairs(data.dst) do
+			-- Just one source: data.s.y, data.s.x
+			local y , x  = data.src.y, data.src.x
+			local oy, ox = coor.oy,    coor.ox
+
+
+			local dirS, dirD = "", ""
+			if oy < y then dirS=dirS.."t" dirD=dirD.."b"
+			elseif oy > y then dirS=dirS.."b" dirD=dirD.."t"
+			end
+			if ox < x then dirS=dirS.."l" dirD=dirD.."r"
+			elseif ox > x then dirS=dirS.."r" dirD=dirD.."l"
+			end
+			y , x  = kn.directionsoffsets(dirS,  y,  x)
+			oy, ox = kn.directionsoffsets(dirD, oy, ox)
+
+			local dy, dx = oy - y, ox - x
+			local angle = math.abs(math.atan(dy / dx))
+			local off = math.pi / 2
+			local midy, midx = dy / 2 + y, dx / 2 + x
+			local newy = midy + (0.35) * math.sin(angle + off)
+			local newx = midx + (0.35) * math.cos(angle + off)
+
+			metafun([[draw (%s*size,-%s*size)..(%s*size,-%s*size)..
+				(%s*size,-%s*size)]]..kn.color..";",
+				x, y, newx, newy, ox, oy, kn.colors[gr])
+		end
+	end
+end
+
+
+
+function karnaugh.directionsoffsets(dir, y, x)
+	    if dir == "tr" then return y-0.8, x-0.2
+	elseif dir == "tl" then return y-0.8, x-0.8
+	elseif dir == "br" then return y-0.2, x-0.2
+	elseif dir == "bl" then return y-0.2, x-0.8
+	elseif dir == "lb" then return y-0.2, x-0.8
+	elseif dir == "lt" then return y-0.8, x-0.8
+	elseif dir == "rb" then return y-0.2, x-0.2
+	elseif dir == "rt" then return y-0.8, x-0.2
+	elseif dir == "r"  then return y-0.5, x-0.1
+	elseif dir == "b"  then return y-0.1, x-0.5
+	elseif dir == "l"  then return y-0.5, x-0.9
+	elseif dir == "t"  then return y-0.9, x-0.5
 	end
 end
 
@@ -641,6 +641,12 @@ function karnaugh.drawNotes()
 				elseif v[1] == "b" then
 					dstStr = dstStr:format(x-0.5, -kn.height-0.7)
 					srcStr = srcStr:format(x-0.5, -y+0.1)
+				elseif v[1] == "l" then -- dstStr Equivalent to "lb"
+					dstStr = dstStr:format(-1, -y)
+					srcStr = srcStr:format(x-0.9, -y+0.5)
+				elseif v[1] == "t" then -- dstStr Equivalent to "tr"
+					dstStr = dstStr:format(x, 1)
+					srcStr = srcStr:format(x-0.5, -y+0.9)
 				end
 				
 				metafun("drawarrow %s -- %s" .. kn.color .. ";",
