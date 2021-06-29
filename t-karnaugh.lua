@@ -10,7 +10,7 @@ if not modules then modules = { } end modules ['t-karnaugh'] = {
 thirddata = thirddata or { }
 thirddata.karnaugh = {
 	indices = false,
-	labelStyle, -- It varies with the map's size
+	labelStyle, -- Varies with the map's size: "corner" or "edge"
 	groupStyle = "pass",
 	
 	rotate = [[rotatedaround((0.5*size, -0.5*size), %s) ]],
@@ -174,10 +174,10 @@ function karnaugh.groups(buffer)
 	local grArr, labelArr, sConnArr, dConnArr = {}, {}, {}, {}
 	for i=1, #arr, 1 do
 		arr[i] = arr[i]:gsub("%s", "")     -- Remove all spaces
-		labelArr[i] = arr[i]:gsub("[^%u%*]", "") -- Leave the asterisks
-		dConnArr[i] = arr[i]:gsub("[^%u%-]", "") -- Leave the dashes
-		sConnArr[i] = arr[i]:gsub("[^%u%+]", "") -- Leave the pluses
-		grArr[i]    = arr[i]:gsub("[^%u]", "")   -- Just Letters
+		labelArr[i] = arr[i]:gsub("[^%a%*]", "") -- Leave the asterisks
+		dConnArr[i] = arr[i]:gsub("[^%a%-]", "") -- Leave the dashes
+		sConnArr[i] = arr[i]:gsub("[^%a%+]", "") -- Leave the pluses
+		grArr[i]    = arr[i]:gsub("[^%a]", "")   -- Just Letters
 	end
 	kn.setGroups(grArr) -- Just the letters
 	kn.setNotes(labelArr) -- Letters and asterisks
@@ -194,13 +194,13 @@ function karnaugh.setConnections(dConnArr, sConnArr)
 	for y = 1, kn.height, 1 do
 		for x = 1, kn.width, 1 do
 			local cell = dConnArr[(y-1) * kn.width + x]
-			for gr in cell:gmatch("(%u)%-") do
+			for gr in cell:gmatch("(%a)%-") do
 				conns[gr] = conns[gr] or {}
 				conns[gr].dst = conns[gr].dst or {}
 				conns[gr].dst[#conns[gr].dst+1] = {oy=y, ox=x}
 			end
 			local cell = sConnArr[(y-1) * kn.width + x]
-			for gr in cell:gmatch("(%u)%+") do
+			for gr in cell:gmatch("(%a)%+") do
 				conns[gr] = conns[gr] or {}
 				conns[gr].src = {y=y, x=x}
 			end
@@ -218,7 +218,7 @@ function karnaugh.setNotes(content)
 		for x = 1, kn.width, 1 do
 			notes[y][x] = {}
 			local cell = content[(y-1) * kn.width + x]
-			for gr in cell:gmatch("(%u)%*") do
+			for gr in cell:gmatch("(%a)%*") do
 				notes[y][x][gr] = {"", ""}
 			end
 		end
@@ -323,7 +323,7 @@ end
 
 ---------------------------------------------------------------------
 
-                        --DRAWING FUNCTIONS--
+                        -- DRAWING FUNCTIONS --
 
 ---------------------------------------------------------------------
 
@@ -438,9 +438,6 @@ function karnaugh.drawGrid()
 		kn.numToGray(x, #kn.hVars), (0.5 + x))
 		end
 	end
-	
-	--metafun([[setbounds currentpicture to fullsquare
-	--	scaled(7*size) shifted(2*size, -1.75*size);]])
 end
 
 
@@ -467,7 +464,7 @@ end
 
 
 
-local p = { -- Clockwise i initial f final
+local p = { -- Clockwise: i initial f final
 ["Ri"] = "(1.2size, -0.9size)..{left}",  ["ri"] = "(size, -0.9size)..{left}",
 ["Bi"] = "(0.1size, -1.2size)..{up}",    ["bi"] = "(0.1size, -size)..{up}",
 ["Li"] = "(-0.2size, -0.1size)..{right}",["li"] = "(0, -0.1size)..{right}",
@@ -538,7 +535,7 @@ function karnaugh.drawGroups()
 					for i=1, #paths, 1 do
 						arr[gr] = arr[gr] .. string.format("draw ("..
 							paths[i]..") "..kn.shift..kn.color..";",
-							x, y, kn.colors[gr])
+							x, y, kn.colors[gr] or "black")
 					end
 				end
 			end
@@ -548,20 +545,36 @@ function karnaugh.drawGroups()
 	for gr, str in pairs(arr) do -- Draw all cells of a group at once
 		metafun(str)
 	end
+
+	metafun([[interim linecap := rounded;]])
 end
 
 
 function karnaugh.drawConnections()
-	metafun([[interim linecap := rounded;]])
 	-- For every group that has connections
 	for gr, data in pairs(kn.conns) do
 		-- There can be many destinations
 		for i, coor in pairs(data.dst) do
-			-- Just one source: data.s.y, data.s.x
+			-- Just one source: data.src.y, data.src.x
 			local y , x  = data.src.y, data.src.x
 			local oy, ox = coor.oy,    coor.ox
 
+			-- This determines whether the curve should go to the left
+			-- (if the groups connnect to the right) or to the bottom
+			-- (if the groups connect to the top)
+			local negx, negy = 1, 1
+			for i, dir in pairs(kn.groups[y][x].d[gr]) do
+				for oi, odir in pairs(kn.groups[oy][ox].d[gr]) do
+					if dir:lower() == "r" and odir:lower() == "r" then
+						negx = -1
+					end
+					if dir:lower() == "t" and odir:lower() == "t" then
+						negy = -1
+					end
+				end
+			end
 
+			-- Determines the direction of the part we are to connect to
 			local dirS, dirD = "", ""
 			if oy < y then dirS=dirS.."t" dirD=dirD.."b"
 			elseif oy > y then dirS=dirS.."b" dirD=dirD.."t"
@@ -569,19 +582,36 @@ function karnaugh.drawConnections()
 			if ox < x then dirS=dirS.."l" dirD=dirD.."r"
 			elseif ox > x then dirS=dirS.."r" dirD=dirD.."l"
 			end
+			-- And we offset the starting and ending points accordingly
+			-- To be on the group's line's edge
 			y , x  = kn.directionsoffsets(dirS,  y,  x)
 			oy, ox = kn.directionsoffsets(dirD, oy, ox)
 
+			-- Calculate 3 middle point to get a curve that starts turning
+			-- quiclky and then is mostly flat during most of the travel
 			local dy, dx = oy - y, ox - x
 			local angle = math.abs(math.atan(dy / dx))
-			local off = math.pi / 2
-			local midy, midx = dy / 2 + y, dx / 2 + x
-			local newy = midy + (0.35) * math.sin(angle + off)
-			local newx = midx + (0.35) * math.cos(angle + off)
+			local yoff = negy * 0.35 * math.sin(angle - math.pi / 2)
+			local xoff = negx * 0.35 * math.cos(angle - math.pi / 2)
+			local midy, midx = dy * 0.5 + y, dx * 0.5 + x
+			local newy, newx = midy + yoff*1.1, midx + xoff*1.1
+			local midy1, midx1 = dy * 0.2 + y, dx * 0.2 + x
+			local newy1, newx1 = midy1 + yoff*0.9, midx1 + xoff*0.9
+			local midy2, midx2 = dy * 0.8 + y, dx * 0.8 + x
+			local newy2, newx2 = midy2 + yoff*0.9, midx2 + xoff*0.9
+
+			-- This "disables" the origin offset for diagonals, smoothly
+			local multiplier = 0.5 * (1-math.sin(2*angle))^4
+			-- Move the origin points by an offset, to get them further
+			-- apart from the content of nearby cells
+			x, ox = x + xoff * multiplier, ox + xoff * multiplier
+			y, oy = y + yoff * multiplier, oy + yoff * multiplier
 
 			metafun([[draw (%s*size,-%s*size)..(%s*size,-%s*size)..
+				(%s*size,-%s*size)..(%s*size,-%s*size)..
 				(%s*size,-%s*size)]]..kn.color..";",
-				x, y, newx, newy, ox, oy, kn.colors[gr])
+				x, y, newx1, newy1, newx, newy, newx2, newy2, ox, oy,
+				kn.colors[gr] or "black")
 		end
 	end
 end
@@ -605,57 +635,41 @@ function karnaugh.directionsoffsets(dir, y, x)
 end
 
 
+function karnaugh.directionsdestinations(dir, y, x)
+	    if dir == "tr" then return -1, x
+	elseif dir == "Tr" then return -2, x
+	elseif dir == "tl" then return -1, x-1
+	elseif dir == "Tl" then return -2, x-1
+	elseif dir == "br" then return kn.height+0.7, x
+	elseif dir == "Br" then return kn.height+1.7, x
+	elseif dir == "bl" then return kn.height+0.7, x-1
+	elseif dir == "Bl" then return kn.height+1.7, x-1
+	elseif dir == "lb" then return y, -1
+	elseif dir == "lt" then return y-1, -1
+	elseif dir == "rb" then return y, kn.width+0.7
+	elseif dir == "rt" then return y-1, kn.width+0.7
+	elseif dir == "r"  then return y-0.5, kn.width+0.7
+	elseif dir == "b"  then return kn.height+0.7, x-0.5
+	end
+end
+
+
 function karnaugh.drawNotes()
 	for y = 1, kn.height, 1 do
 		for x = 1, kn.width, 1 do
 			for gr, v in pairs(kn.notes[y][x]) do
-				local dstStr = "(%s*size, %s*size)";
-				local srcStr = "(%s*size, %s*size)";
-				if v[1] == "tr" then
-					dstStr = dstStr:format(x, 1)
-					srcStr = srcStr:format(x-0.2, -y+0.8)
-				elseif v[1] == "tl" then
-					dstStr = dstStr:format(x-1, 1)
-					srcStr = srcStr:format(x-0.8, -y+0.8)
-				elseif v[1] == "br" then
-					dstStr = dstStr:format(x, -kn.height-0.7)
-					srcStr = srcStr:format(x-0.2, -y+0.2)
-				elseif v[1] == "bl" then
-					dstStr = dstStr:format(x-1, -kn.height-0.7)
-					srcStr = srcStr:format(x-0.8, -y+0.2)
-				elseif v[1] == "lb" then
-					dstStr = dstStr:format(-1, -y)
-					srcStr = srcStr:format(x-0.8, -y+0.2)
-				elseif v[1] == "lt" then
-					dstStr = dstStr:format(-1, -y+1)
-					srcStr = srcStr:format(x-0.8, -y+0.8)
-				elseif v[1] == "rb" then
-					dstStr = dstStr:format(kn.width+0.7, -y)
-					srcStr = srcStr:format(x-0.2, -y+0.2)
-				elseif v[1] == "rt" then
-					dstStr = dstStr:format(kn.width+0.7, -y+1)
-					srcStr = srcStr:format(x-0.2, -y+0.8)
-				elseif v[1] == "r" then
-					dstStr = dstStr:format(kn.width+0.7, -y+0.5)
-					srcStr = srcStr:format(x-0.1, -y+0.5)
-				elseif v[1] == "b" then
-					dstStr = dstStr:format(x-0.5, -kn.height-0.7)
-					srcStr = srcStr:format(x-0.5, -y+0.1)
-				elseif v[1] == "l" then -- dstStr Equivalent to "lb"
-					dstStr = dstStr:format(-1, -y)
-					srcStr = srcStr:format(x-0.9, -y+0.5)
-				elseif v[1] == "t" then -- dstStr Equivalent to "tr"
-					dstStr = dstStr:format(x, 1)
-					srcStr = srcStr:format(x-0.5, -y+0.9)
-				end
+				local dir, note = v[1], v[2]
+				local dsty, dstx = kn.directionsdestinations(dir, y, x)
+				local srcy, srcx = kn.directionsoffsets(dir:lower(), y, x)
 				
-				metafun("drawarrow %s -- %s" .. kn.color .. ";",
-					srcStr, dstStr, kn.colors[gr])
+				metafun("drawarrow (%s*size, %s*size) -- (%s*size, %s*size)"
+					.. kn.color .. ";", srcx, -srcy, dstx, -dsty,
+					kn.colors[gr] or "black")
 				
 				local posTable = {["t"] = "top", ["b"] = "bot",
 					["l"] = "lft", ["r"] = "rt"}
-				metafun("label.%s(btex {%s} etex, %s);",
-					posTable[v[1]:sub(1, 1)], v[2], dstStr)
+				metafun("label.%s(btex {%s} etex, (%s*size, %s*size));",
+					posTable[dir:sub(1, 1):lower()], note, dstx, -dsty)
 				
 			end
 		end

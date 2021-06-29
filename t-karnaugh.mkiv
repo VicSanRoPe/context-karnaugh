@@ -10,11 +10,9 @@
 
 
 \registerctxluafile{t-karnaugh}{}
-%\ctxloadluafile{t-karnaugh}
 
 
 \unprotect
-
 
 \unexpanded\def\startkarnaugh{\dosingleempty\dostartkarnaugh}
 \unexpanded\def\dostartkarnaugh[#1]{
@@ -44,5 +42,52 @@
 \unexpanded\def\karnaughnote#1#2#3{\ctxlua{
 	thirddata.karnaugh.setNote([==[#1]==], [==[#2]==], [==[#3]==])}}
 
+\protect
 
-\protect \endinput
+
+
+
+
+\continueifinputfile{t-karnaugh.mkiv}
+
+
+\starttext
+
+\startkarnaugh[ny=8, nx=8, label=$f_{(I_0I_1I_2I_3I_4I_5)}$,
+	ylabels={$I_0$, $I_1$, $I_2$}, xlabels={$I_3$, $I_4$, $I_5$},
+	labelstyle=corner, groupstyle=pass, indices=no]
+
+%\startkarnaugh
+
+\startkarnaughdata
+1,	0,	0,	1,	1,	0,	0,	1,
+0,	1,	1,	0,	0,	1,	1,	0,
+0,	1,	1,	0,	0,	1,	1,	0,
+1,	0,	0,	1,	1,	0,	0,	1,
+1,	0,	0,	1,	1,	0,	0,	1,
+0,	0,	0,	0,	0,	0,	0,	0,
+0,	1,	1,	0,	0,	0,	0,	0,
+1,	0,	0,	1,	1,	0,	0,	1,
+\stopkarnaughdata
+
+%\karnaughtabledata{1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0}
+
+\startkarnaughgroups
+A,	,	,	A,	A,	,	,	A,
+,	CB,	C-B-,	,	,	B+D*,	B*,	,
+,	B,	B,	,	,	B,	B,	,
+A,	,	,	A,	A,	,	,	A,
+A,	,	,	A,	A-,	,	,	A-,
+,	,	,	,	,	,	,	,
+,	C*,	C+,	,	,	,	,	,
+A,	,	,	A,	A-,	,	,	A+*,
+\stopkarnaughgroups
+
+\karnaughnote{A}{$\overbar{I_1} \cdot \overbar{I_4}$}{r}
+\karnaughnote{B}{Note B}{tr}
+\karnaughnote{C}{Note C}{lt}
+\karnaughnote{D}{Note D}{Tr}
+
+\stopkarnaugh
+
+\stoptext
