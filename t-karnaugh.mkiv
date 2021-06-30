@@ -1,18 +1,19 @@
-%D \module
-%D   [     file=<filename>, % e.g. t-xxx
-%D      version=<module version>, % e.g. 20xx.xx.xx
-%D        title=<module title>, % e.g. \CONTEXT\ User Module
-%D     subtitle=<module subtitle>,
-%D       author=<author>,
-%D         date=<date>, % e.g. \currentdate
-%D    copyright=<copyright>, % e.g. <author>
-%D      license=<license>] % e.g. 'Public Domain' or 'GNU GPL 2.0'
+%D \module[
+%D         file=t-karnaugh.mkiv,
+%D      version=0.91,
+%D        title=Karnaugh,
+%D     subtitle=Draws Karnaugh maps,
+%D       author=VicSanRoPe,
+%D    copyright=VicSanRoPe,
+%D         date=\currentdate,
+%D      license=GNU GPL 2.0]
 
 
 \registerctxluafile{t-karnaugh}{}
 
-
+\startmodule[karnaugh]
 \unprotect
+
 
 \unexpanded\def\startkarnaugh{\dosingleempty\dostartkarnaugh}
 \unexpanded\def\dostartkarnaugh[#1]{
@@ -24,14 +25,14 @@
 \unexpanded\def\startkarnaughdata{\dostartbuffer[kndata] % Buffer name
     [startkarnaughdata][stopkarnaughdata]} % Where it starts and stops
 \unexpanded\def\stopkarnaughdata{\ctxlua{
-	thirddata.karnaugh.data(buffers.getcontent('kndata'))}}
+	thirddata.karnaugh.processData(buffers.getcontent('kndata'))}}
 
 
 \unexpanded\def\startkarnaughgroups{\dostartbuffer[kngroups]
     [startkarnaughgroups][stopkarnaughgroups]}
 
 \unexpanded\def\stopkarnaughgroups{\ctxlua{
-	thirddata.karnaugh.groups(buffers.getcontent('kngroups'))}}
+	thirddata.karnaugh.processGroups(buffers.getcontent('kngroups'))}}
 
 
 \unexpanded\def\karnaughtabledata#1{\ctxlua{
@@ -43,6 +44,8 @@
 	thirddata.karnaugh.setNote([==[#1]==], [==[#2]==], [==[#3]==])}}
 
 \protect
+\stopmodule
+
 
 
 
@@ -50,12 +53,14 @@
 
 \continueifinputfile{t-karnaugh.mkiv}
 
+%\setupbodyfont[8pt] Looks fine down to 8pt
 
 \starttext
 
-\startkarnaugh[ny=8, nx=8, label=$f_{(I_0I_1I_2I_3I_4I_5)}$,
+\placefigure[here]{Karnaugh map}{
+\startkarnaugh[ny=8, nx=8, label=$f_{(I)}$,
 	ylabels={$I_0$, $I_1$, $I_2$}, xlabels={$I_3$, $I_4$, $I_5$},
-	labelstyle=corner, groupstyle=pass, indices=no]
+	labelstyle=edge, groupstyle=pass, indices=yes]
 
 %\startkarnaugh
 
@@ -74,20 +79,42 @@
 
 \startkarnaughgroups
 A,	,	,	A,	A,	,	,	A,
-,	CB,	C-B-,	,	,	B+D*,	B*,	,
+,	C*B,	C-B-,	,	,	B+D*,	B*,	,
 ,	B,	B,	,	,	B,	B,	,
 A,	,	,	A,	A,	,	,	A,
 A,	,	,	A,	A-,	,	,	A-,
 ,	,	,	,	,	,	,	,
-,	C*,	C+,	,	,	,	,	,
+,	C,	C+,	,	,	,	,	,
 A,	,	,	A,	A-,	,	,	A+*,
 \stopkarnaughgroups
 
 \karnaughnote{A}{$\overbar{I_1} \cdot \overbar{I_4}$}{r}
-\karnaughnote{B}{Note B}{tr}
-\karnaughnote{C}{Note C}{lt}
-\karnaughnote{D}{Note D}{Tr}
+\karnaughnote{B}{$\overbar{I_0} \cdot I_2 \cdot I_5$}{tr}
+\karnaughnote{C}{$\overbar{I_1} \cdot I_2 \cdot \overbar{I_3} \cdot I_5$}{Tl}
+\karnaughnote{D}{See \note[knD]}{rb}
 
 \stopkarnaugh
+}
+
+\footnotetext[knD]{This group is just an example}
+
+
+\startkarnaugh[nx=2, ny=2, indices=yes, ylabels={$X_1$}, xlabels={$X_0$}, labelstyle=edge, scale=1]
+\startkarnaughdata
+0, $d$,
+1, 1
+\stopkarnaughdata
+\stopkarnaugh
+\startkarnaugh[nx=2, ny=2, indices=yes, ylabels={$X_1$}, xlabels={$X_0$}, labelstyle=edge, scale=1]
+\startkarnaughdata
+0, $d$,
+1, 1
+\stopkarnaughdata
+\startkarnaughgroups
+,	A,
+B,	,
+\stopkarnaughgroups
+\stopkarnaugh
+
 
 \stoptext

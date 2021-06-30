@@ -1,10 +1,9 @@
 if not modules then modules = { } end modules ['t-karnaugh'] = {
-    version   = 0.1,
+    version   = 0.91,
     comment   = "Karnaugh",
-    author    = "",
-    copyright = "",
-    email     = "",
-    license   = ""
+    author    = "VicSanRoPe",
+    copyright = "VicSanRoPe 2021",
+    license   = "GNU GPL 2.0"
 }
 
 thirddata = thirddata or { }
@@ -12,6 +11,7 @@ thirddata.karnaugh = {
 	indices = false,
 	labelStyle, -- Varies with the map's size: "corner" or "edge"
 	groupStyle = "pass",
+	scale = 1, -- big=1.75, small=0.8
 	
 	rotate = [[rotatedaround((0.5*size, -0.5*size), %s) ]],
 	shift  = [[shifted((%s-1)*size, (1-%s)*size) ]],
@@ -53,9 +53,16 @@ end
 
 function karnaugh.setup(string)
 	local opts = utilities.parsers.settings_to_hash(string)
+
+	kn.height,kn.width,kn.vVars,kn.hVars,kn.label = nil,nil,nil,nil,nil
+	kn.indices, kn.groupStyle, kn.labelStyle = false, "pass", nil
+	kn.data,kn.groups,kn.notes,kn.conns = nil,nil,nil,nil
+
 	for k, v in pairs(opts) do
-		if k == "indices" and (v == "on" or v == "yes") then
-			kn.indices = true;
+		if k == "indices" then
+			if v == "on" or v == "yes" then kn.indices = true;
+			elseif v == "off" or v == "no" then kn.indices = false;
+			else error("indices="..v.." is not reconized") end
 		elseif k == "labelstyle" then
 			if v == "corner" then kn.labelStyle = "corner"
 			elseif v == "edge" then kn.labelStyle = "edge"
@@ -74,6 +81,10 @@ function karnaugh.setup(string)
 			kn.width = tonumber(v)
 		elseif k == "label" then
 			kn.label = v
+		elseif k == "scale" then
+			if v == "big" then kn.scale = 1.75
+			elseif v == "small" then kn.scale = 0.8
+			else kn.scale = tonumber(v) end
 		end
 	end
 
@@ -108,7 +119,7 @@ function karnaugh.calculateOptionals()
 end
 
 
-function karnaugh.data(buffer)
+function karnaugh.processData(buffer)
 	if kn.width and kn.height then
 		local arr = utilities.parsers.settings_to_array(buffer)
 		for i=1, #arr, 1 do -- Remove leading and trailing spaces
@@ -169,7 +180,7 @@ function karnaugh.setTableData(content)
 end
 
 
-function karnaugh.groups(buffer)
+function karnaugh.processGroups(buffer)
 	local arr = utilities.parsers.settings_to_array(buffer)
 	local grArr, labelArr, sConnArr, dConnArr = {}, {}, {}, {}
 	for i=1, #arr, 1 do
@@ -332,10 +343,12 @@ end
 
 function karnaugh.drawMap()
 	metafun.start()
+
 	if kn.indices and kn.groups then
-		metafun("size := 7mm;")
+		--metafun("size := %s*1.5*LineHeight;", kn.scale*0.6+0.4)
+		metafun("size := %s*1.6*LineHeight;", kn.scale)
 	else
-		metafun("size := 6mm;")
+		metafun("size := %s*1.25*LineHeight;", kn.scale)
 	end
 	karnaugh.drawGrid()
 	karnaugh.drawData()
@@ -366,34 +379,34 @@ function karnaugh.drawGrid()
 		metafun([[draw origin -- (-%s*size, %s*size);]], length, length)
 		
 		for i = 1, #kn.vVars, 1 do
-			metafun([[label.llft(btex {%s} etex, (-%s*size, %s*size));]],
+			metafun([[label.llft(textext("{%s}"), (-%s*size, %s*size));]],
 				kn.vVars[#kn.vVars-i+1], 0.5*i-0.2, 0.5*i+0.1)
 		end
 		for i = 1, #kn.hVars, 1 do
-			metafun([[label.urt(btex {%s} etex, (-%s*size, %s*size));]],
+			metafun([[label.urt(textext("{%s}"), (-%s*size, %s*size));]],
 				kn.hVars[#kn.hVars-i+1], 0.5*i+0.2, 0.5*i-0.1)
 		end
 
 		if kn.label then
 			-- Map's label
-			metafun([[label.top(btex %s etex, (%s*size, 0.8size));]],
+			metafun([[label.top(textext("{%s}"), (%s*size, 0.8size));]],
 				kn.label, kn.width/2)
 		end
 
 	elseif kn.labelStyle == "edge" then
 		local str = ""
 		for i = 1, #kn.hVars, 1 do str = str .. " " .. kn.hVars[i] end
-		metafun([[draw thelabel.top(btex {%s} etex, (0, 0))
-			shifted(%s*size, %s*size);]],
-			str, kn.width/2, 0.75)
+		metafun([[draw thelabel.top(textext("{%s}"), (0, 0))
+			shifted(%s*size, LineHeight);]],
+			str, kn.width/2)
 		str = ""
 		for i = 1, #kn.vVars, 1 do str = str .. " " .. kn.vVars[i] end
-		metafun([[draw thelabel.top(btex {%s} etex, (0, 0))
-			rotated(90) shifted(-%s*size, %s*size);]],
-			str, (0.4+#kn.vVars/4), -kn.height/2)
+		metafun([[draw thelabel.top(textext("{%s}"), (0, 0))
+			rotated(90) shifted((-1-%s)*LineHeight, %s*size);]],
+			str, (#kn.vVars/4), -kn.height/2)
 		if kn.label then
 			-- Map's label
-			metafun([[label.ulft(btex %s etex, (-0.2size, 0.2size));]],
+			metafun([[label.ulft(textext("{%s}"), (-0.2size, 0.2size));]],
 				kn.label)
 		end
 	end
@@ -425,18 +438,16 @@ function karnaugh.drawGrid()
 	end
 	
 	--Gray code
+	local graysize = "tfx" -- Indices are small
+	if kn.width > 4 or kn.height > 4 then graysize="tfxx" end -- Smaller
+	if kn.indices and kn.groups then graysize="tfx" end -- There is space
 	for y = 0, kn.height-1, 1 do
-		metafun([[label.lft(btex {\tfx %s} etex, (-0.1*size, -%s*size));]],
-		kn.numToGray(y, #kn.vVars), (0.5 + y))
+		metafun([[label.lft(textext("{\%s %s}"), (-0.1*size, -%s*size));]],
+		graysize, kn.numToGray(y, #kn.vVars), (0.5 + y))
 	end
 	for x = 0, kn.width-1, 1 do
-		if kn.width <= 8 then
-		metafun([[label.top(btex {\tfx %s} etex, (%s*size, 0.1*size));]],
-		kn.numToGray(x, #kn.hVars), (0.5 + x))
-		else
-		metafun([[label.top(btex {\tfxx %s} etex, (%s*size, 0.1*size));]],
-		kn.numToGray(x, #kn.hVars), (0.5 + x))
-		end
+		metafun([[label.top(textext("{\%s %s}"), (%s*size, 0.1*size));]],
+		graysize, kn.numToGray(x, #kn.hVars), (0.5 + x))
 	end
 end
 
@@ -445,17 +456,18 @@ function karnaugh.drawData()
 	for y = 0, kn.height-1, 1 do
 		for x = 0, kn.width-1, 1 do
 			if kn.data and not kn.indices then
-				metafun([[label(btex {%s} etex, (%s*size,-%s*size));]],
+				metafun([[label(textext("{%s}"), (%s*size,-%s*size));]],
 					kn.data[y+1][x+1], x+0.5, y+0.5)
 			else
-				if kn.groups then offset = 0.11 else offset = 0.02 end
+				local offset = 0
+				if kn.groups then offset = 0.07 end
 				local pos = ((y ~ (y >> 1)) << #kn.hVars) + (x ~ (x >> 1))
-				metafun([[draw thelabel.lrt(btex {\tfxx %s} etex,
-					(%s*size, -%s.size)) withcolor(0.33white);]],
-					pos, x+offset, y+offset)
+				metafun([[draw thelabel(textext("{\tfxx %s}"),
+					(%s*size, -%s*size)) withcolor(0.33white);]],
+					pos, x+0.33+offset, y+0.33)
 				if kn.data then
-					metafun([[label(btex {%s} etex, (%s*size,-%s*size));]],
-						kn.data[y+1][x+1], x+0.64, y+0.64)
+					metafun([[label(textext("{%s}"), (%s*size,-%s*size));]],
+						kn.data[y+1][x+1], x+0.62, y+0.62)
 				end
 			end
 		end
@@ -662,13 +674,13 @@ function karnaugh.drawNotes()
 				local dsty, dstx = kn.directionsdestinations(dir, y, x)
 				local srcy, srcx = kn.directionsoffsets(dir:lower(), y, x)
 				
-				metafun("drawarrow (%s*size, %s*size) -- (%s*size, %s*size)"
+				metafun([[drawarrow (%s*size, %s*size)--(%s*size, %s*size)]]
 					.. kn.color .. ";", srcx, -srcy, dstx, -dsty,
 					kn.colors[gr] or "black")
 				
 				local posTable = {["t"] = "top", ["b"] = "bot",
 					["l"] = "lft", ["r"] = "rt"}
-				metafun("label.%s(btex {%s} etex, (%s*size, %s*size));",
+				metafun([[label.%s(textext("{%s}"), (%s*size, %s*size));]],
 					posTable[dir:sub(1, 1):lower()], note, dstx, -dsty)
 				
 			end
