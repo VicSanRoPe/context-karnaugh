@@ -1,5 +1,5 @@
 if not modules then modules = { } end modules ['t-karnaugh'] = {
-    version   = 0.91,
+    version   = 0.92,
     comment   = "Karnaugh",
     author    = "VicSanRoPe",
     copyright = "VicSanRoPe 2021",
@@ -55,18 +55,18 @@ function karnaugh.setup(string)
 	local opts = utilities.parsers.settings_to_hash(string)
 
 	kn.height,kn.width,kn.vVars,kn.hVars,kn.label = nil,nil,nil,nil,nil
-	kn.indices, kn.groupStyle, kn.labelStyle = false, "pass", nil
+	kn.indices,kn.groupStyle,kn.labelStyle,kn.scale = false,"pass",nil,1
 	kn.data,kn.groups,kn.notes,kn.conns = nil,nil,nil,nil
 
 	for k, v in pairs(opts) do
 		if k == "indices" then
 			if v == "on" or v == "yes" then kn.indices = true;
 			elseif v == "off" or v == "no" then kn.indices = false;
-			else error("indices="..v.." is not reconized") end
+			else error("What is indices="..v.."?") end
 		elseif k == "labelstyle" then
 			if v == "corner" then kn.labelStyle = "corner"
 			elseif v == "edge" then kn.labelStyle = "edge"
-			else error("What is "..v.."?") end
+			else error("What is labelstyle="..v.."?") end
 		elseif k == "groupstyle" then
 			if v == "pass" then kn.groupStyle = "pass"
 			elseif v == "stop" then kn.groupStyle = "stop"
@@ -81,9 +81,10 @@ function karnaugh.setup(string)
 			kn.width = tonumber(v)
 		elseif k == "label" then
 			kn.label = v
-		elseif k == "scale" then
-			if v == "big" then kn.scale = 1.75
+		elseif k == "spacing" then
+			if v == "normal" then kn.scale = 1
 			elseif v == "small" then kn.scale = 0.8
+			elseif v == "big" then kn.scale = 1.75
 			else kn.scale = tonumber(v) end
 		end
 	end
@@ -174,6 +175,34 @@ function karnaugh.setTableData(content)
 		for x = 0, kn.width-1, 1 do
 			local pos = ((y ~ (y >> 1)) << #kn.hVars) + (x ~ (x >> 1))
 			data[y+1][x+1] = content[pos+1]
+		end
+	end
+	karnaugh.data = data
+end
+
+function karnaugh.setMintermsData(content)
+	karnaugh.setTermsData(content, "1", "0")
+end
+function karnaugh.setMaxtermsData(content)
+	karnaugh.setTermsData(content, "0", "1")
+end
+
+function karnaugh.setTermsData(content, normal, negated)
+	local data = {}
+	for y = 0, kn.height-1, 1 do
+		data[y+1] = {}
+		for x = 0, kn.width-1, 1 do
+			local pos = ((y ~ (y >> 1)) << #kn.hVars) + (x ~ (x >> 1))
+			for i, val in pairs(content) do
+				if tonumber(val) == pos then
+					data[y+1][x+1] = normal
+				end
+			end
+		end
+	end
+	for y = 1, kn.height, 1 do
+		for x = 1, kn.width, 1 do
+			if not data[y][x] then data[y][x] = negated end
 		end
 	end
 	karnaugh.data = data
@@ -343,10 +372,12 @@ end
 
 function karnaugh.drawMap()
 	metafun.start()
+	--metafun("interim bboxmargin := 0;")
 
 	if kn.indices and kn.groups then
-		--metafun("size := %s*1.5*LineHeight;", kn.scale*0.6+0.4)
-		metafun("size := %s*1.6*LineHeight;", kn.scale)
+		-- More space if the small spacing is selected, and the size is
+		-- not that much bigger than with no indices with big spacing
+		metafun("size := %s*1.6*LineHeight;", kn.scale*0.6+0.4)
 	else
 		metafun("size := %s*1.25*LineHeight;", kn.scale)
 	end
@@ -361,7 +392,7 @@ function karnaugh.drawMap()
 	if kn.notes then
 		karnaugh.drawNotes()
 	end
-	
+	--metafun("draw bbox currentpicture withpen pencircle scaled 1pt;")
 	metafun.stop()
 end
 
@@ -372,19 +403,22 @@ function karnaugh.drawGrid()
 	if kn.labelStyle == "corner" then
 		local length;
 		if #kn.vVars >= #kn.hVars then
-			length = 1.2 + (#kn.vVars-2) / 2
+			length = 2 + (#kn.vVars-2) / 2
 		else
-			length = 1.2 + (#kn.hVars-2) / 2
+			length = 2 + (#kn.hVars-2) / 2
 		end
-		metafun([[draw origin -- (-%s*size, %s*size);]], length, length)
+		metafun([[draw origin -- (-%s*LineHeight, %s*LineHeight);]],
+			length, length)
 		
 		for i = 1, #kn.vVars, 1 do
-			metafun([[label.llft(textext("{%s}"), (-%s*size, %s*size));]],
-				kn.vVars[#kn.vVars-i+1], 0.5*i-0.2, 0.5*i+0.1)
+			metafun([[label.llft(textext("{%s}"),
+				(-%s*LineHeight, %s*LineHeight));]],
+				kn.vVars[#kn.vVars-i+1], 0.8*i-0.2, 0.8*i+0.1)
 		end
 		for i = 1, #kn.hVars, 1 do
-			metafun([[label.urt(textext("{%s}"), (-%s*size, %s*size));]],
-				kn.hVars[#kn.hVars-i+1], 0.5*i+0.2, 0.5*i-0.1)
+			metafun([[label.urt(textext("{%s}"),
+				(-%s*LineHeight, %s*LineHeight));]],
+				kn.hVars[#kn.hVars-i+1], 0.8*i+0.2, 0.8*i)
 		end
 
 		if kn.label then
@@ -533,7 +567,7 @@ end
 
 
 function karnaugh.drawGroups()
-	metafun([[pickup pencircle scaled(0.4mm);]])
+	metafun([[pickup pencircle scaled(0.06*size);]])
 	metafun([[interim linecap := squared;]])
 	
 	local arr = {}
