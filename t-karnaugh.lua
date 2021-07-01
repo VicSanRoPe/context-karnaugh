@@ -38,6 +38,8 @@ local kn = karnaugh
 local metafun = context.metafun
 
 
+karnaugh.opts = {}
+
 
 function karnaugh.numToGray(num, bits)
 	-- ~ is exclusive or, >> is shift right --
@@ -51,43 +53,65 @@ function karnaugh.numToGray(num, bits)
 end
 
 
-function karnaugh.setup(string)
-	local opts = utilities.parsers.settings_to_hash(string)
-
-	kn.height,kn.width,kn.vVars,kn.hVars,kn.label = nil,nil,nil,nil,nil
-	kn.indices,kn.groupStyle,kn.labelStyle,kn.scale = false,"pass",nil,1
-	kn.data,kn.groups,kn.notes,kn.conns = nil,nil,nil,nil
-
-	for k, v in pairs(opts) do
+function karnaugh.processOpts(content)
+	local opts = {}
+	for k, v in pairs(content) do
 		if k == "indices" then
-			if v == "on" or v == "yes" then kn.indices = true;
-			elseif v == "off" or v == "no" then kn.indices = false;
+			if v == "on" or v == "yes" then opts.indices = true;
+			elseif v == "off" or v == "no" then opts.indices = false;
 			else error("What is indices="..v.."?") end
 		elseif k == "labelstyle" then
-			if v == "corner" then kn.labelStyle = "corner"
-			elseif v == "edge" then kn.labelStyle = "edge"
+			if v == "corner" then opts.labelStyle = "corner"
+			elseif v == "edge" then opts.labelStyle = "edge"
 			else error("What is labelstyle="..v.."?") end
 		elseif k == "groupstyle" then
-			if v == "pass" then kn.groupStyle = "pass"
-			elseif v == "stop" then kn.groupStyle = "stop"
+			if v == "pass" then opts.groupStyle = "pass"
+			elseif v == "stop" then opts.groupStyle = "stop"
 			else error("What is groupstyle="..v.."?") end
 		elseif k == "ylabels" then
-			kn.vVars = utilities.parsers.settings_to_array(v)
+			opts.vVars = utilities.parsers.settings_to_array(v)
 		elseif k == "xlabels" then
-			kn.hVars = utilities.parsers.settings_to_array(v)
+			opts.hVars = utilities.parsers.settings_to_array(v)
 		elseif k == "ny" then
-			kn.height = tonumber(v)
+			opts.height = tonumber(v)
 		elseif k == "nx" then
-			kn.width = tonumber(v)
+			opts.width = tonumber(v)
 		elseif k == "label" then
-			kn.label = v
+			opts.label = v
 		elseif k == "spacing" then
-			if v == "normal" then kn.scale = 1
-			elseif v == "small" then kn.scale = 0.8
-			elseif v == "big" then kn.scale = 1.75
-			else kn.scale = tonumber(v) end
+			if v == "normal" then opts.scale = 1.0
+			elseif v == "small" then opts.scale = 0.8
+			elseif v == "big" then opts.scale = 1.75
+			else opts.scale = tonumber(v) end
 		end
 	end
+	return opts
+end
+
+
+function karnaugh.setup(content)
+	kn.height,kn.width,kn.vVars,kn.hVars,kn.label = nil,nil,nil,nil,nil
+	kn.indices,kn.groupStyle,kn.labelStyle,kn.scale = false,"pass",nil,1
+
+	kn.opts = kn.processOpts(content)
+end
+
+
+function karnaugh.start(content)
+	local opts = kn.processOpts(content)
+
+	kn.data,kn.groups,kn.notes,kn.conns = nil,nil,nil,nil
+
+	kn.indices = opts.indices or kn.opts.indices or false
+	kn.groupStyle = opts.groupStyle or kn.opts.groupStyle or "pass"
+	kn.labelStyle = opts.labelStyle or kn.opts.labelStyle or nil
+	kn.scale = opts.scale or kn.opts.scale or 1
+
+	kn.height = opts.height or kn.opts.height or nil
+	kn.width = opts.width or kn.opts.width or nil
+	kn.vVars = opts.vVars or kn.opts.vVars or nil
+	kn.hVars = opts.hVars or kn.opts.hVars or nil
+	kn.label = opts.label or kn.opts.label or nil
 
 	-- Just checking things
 	if kn.height and kn.vVars and kn.height ~= 2^#kn.vVars then
