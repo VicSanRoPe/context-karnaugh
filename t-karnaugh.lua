@@ -6,6 +6,8 @@ if not modules then modules = { } end modules ['t-karnaugh'] = {
     license   = "GNU GPL 2.0"
 }
 
+-- TODO: more colors, add option indicesstart=NUMBER for submaps
+
 thirddata = thirddata or { }
 thirddata.karnaugh = {
 	indices = false,
@@ -17,7 +19,7 @@ thirddata.karnaugh = {
 	shift  = [[shifted((%s-1)*size, (1-%s)*size) ]],
 	color  = [[withcolor(%s) withtransparency("darken", 0.85)]],
 	
-	colors = { -- TODO: more colors
+	colors = {
 		["A"] = "red",
 		["B"] = "green",
 		["C"] = "blue",
@@ -98,9 +100,12 @@ end
 
 
 function karnaugh.start(content)
+	kn.started = true;
+
 	local opts = kn.processOpts(content)
 
 	kn.data,kn.groups,kn.notes,kn.conns = nil,nil,nil,nil
+
 
 	kn.indices = opts.indices or kn.opts.indices or false
 	kn.groupStyle = opts.groupStyle or kn.opts.groupStyle or "pass"
@@ -144,12 +149,29 @@ function karnaugh.calculateOptionals()
 end
 
 
+function karnaugh.checkArrSize(arr, msg)
+	-- This ignores a trailing comma
+	if #arr < kn.width*kn.height or #arr > kn.width*kn.height+1 or
+			(#arr == kn.width*kn.height+1 and arr[#arr] ~= "") then
+		error("Wrong number of "..msg.." elements, try clearing the global options if they are not needed")
+	end
+end
+
 function karnaugh.processData(buffer)
+	if not kn.started then error("Where is my Karnaugh environment?") end
 	if kn.width and kn.height then
 		local arr = utilities.parsers.settings_to_array(buffer)
 		for i=1, #arr, 1 do -- Remove leading and trailing spaces
 			arr[i] = arr[i]:gsub("^%s+", ""):gsub("%s+$", "") end
-		karnaugh.setData(arr)
+		kn.checkArrSize(arr, "data")
+		local data = {}
+		for y = 1, kn.height, 1 do
+			data[y] = {}
+			for x = 1, kn.width, 1 do
+				data[y][x] = arr[(y-1) * kn.width + x]
+			end
+		end
+		kn.data = data
 	else -- We'll guess the map's size
 		local lines = string.splitlines(buffer)
 		local data = {}
@@ -175,24 +197,8 @@ function karnaugh.processData(buffer)
 end
 
 
-function karnaugh.setData(content)
-	local data = {}
-	for y = 1, kn.height, 1 do
-		data[y] = {}
-		for x = 1, kn.width, 1 do
-			data[y][x] = content[(y-1) * kn.width + x]
-		end
-	end
-	
-	if #content == 0 then
-		return false
-	end
-	
-	karnaugh.data = data
-end
-
-
 function karnaugh.setTableData(content)
+	if not kn.started then error("Where is my Karnaugh environment?") end
 	local data = {}
 	for y = 0, kn.height-1, 1 do
 		data[y+1] = {}
@@ -205,9 +211,11 @@ function karnaugh.setTableData(content)
 end
 
 function karnaugh.setMintermsData(content)
+	if not kn.started then error("Where is my Karnaugh environment?") end
 	karnaugh.setTermsData(content, "1", "0")
 end
 function karnaugh.setMaxtermsData(content)
+	if not kn.started then error("Where is my Karnaugh environment?") end
 	karnaugh.setTermsData(content, "0", "1")
 end
 
@@ -234,6 +242,7 @@ end
 
 
 function karnaugh.processGroups(buffer)
+	if not kn.started then error("Where is my Karnaugh environment?") end
 	local arr = utilities.parsers.settings_to_array(buffer)
 	local grArr, labelArr, sConnArr, dConnArr = {}, {}, {}, {}
 	for i=1, #arr, 1 do
@@ -243,6 +252,7 @@ function karnaugh.processGroups(buffer)
 		sConnArr[i] = arr[i]:gsub("[^%a%+]", "") -- Leave the pluses
 		grArr[i]    = arr[i]:gsub("[^%a]", "")   -- Just Letters
 	end
+	kn.checkArrSize(grArr, "group")
 	kn.setGroups(grArr) -- Just the letters
 	kn.setNotes(labelArr) -- Letters and asterisks
 	kn.setConnections(dConnArr, sConnArr) -- Letters and dashes/pluses
@@ -369,6 +379,7 @@ end
 
 
 function karnaugh.setNote(gr, note, dir)
+	if not kn.started then error("Where is my Karnaugh environment?") end
 	for y = 1, kn.height, 1 do
 		for x = 1, kn.width, 1 do
 			for g, v in pairs(kn.notes[y][x]) do
@@ -395,6 +406,7 @@ end
 
 
 function karnaugh.drawMap()
+	if not kn.started then error("Where is my Karnaugh environment?") end
 	metafun.start()
 	--metafun("interim bboxmargin := 0;")
 
@@ -418,6 +430,8 @@ function karnaugh.drawMap()
 	end
 	--metafun("draw bbox currentpicture withpen pencircle scaled 1pt;")
 	metafun.stop()
+
+	kn.started = false;
 end
 
 
@@ -437,12 +451,15 @@ function karnaugh.drawGrid()
 		for i = 1, #kn.vVars, 1 do
 			metafun([[label.llft(textext("{%s}"),
 				(-%s*LineHeight, %s*LineHeight));]],
-				kn.vVars[#kn.vVars-i+1], 0.8*i-0.2, 0.8*i+0.1)
+				--This one looks better with indices, but worse without
+				--kn.vVars[#kn.vVars-i+1], 0.8*i-0.2, 0.8*i+0.1)
+				kn.vVars[#kn.vVars-i+1], 0.8*i, 0.8*i)
 		end
 		for i = 1, #kn.hVars, 1 do
 			metafun([[label.urt(textext("{%s}"),
 				(-%s*LineHeight, %s*LineHeight));]],
-				kn.hVars[#kn.hVars-i+1], 0.8*i+0.2, 0.8*i)
+				--kn.hVars[#kn.hVars-i+1], 0.8*i+0.2, 0.8*i)
+				kn.hVars[#kn.hVars-i+1], 0.8*i, 0.8*i)
 		end
 
 		if kn.label then
@@ -516,7 +533,7 @@ function karnaugh.drawData()
 			if kn.data and not kn.indices then
 				metafun([[label(textext("{%s}"), (%s*size,-%s*size));]],
 					kn.data[y+1][x+1], x+0.5, y+0.5)
-			else
+			elseif kn.indices then
 				local offset = 0
 				if kn.groups then offset = 0.07 end
 				local pos = ((y ~ (y >> 1)) << #kn.hVars) + (x ~ (x >> 1))

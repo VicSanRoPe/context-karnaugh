@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?context-directive job ctxfile x-setups.ctx ?>
+<cd:interface xmlns:cd="http://www.pragma-ade.com/commands">
+	<cd:command name="setupkarnaugh" file="t-karnaugh.mkiv">
+		<cd:arguments>
+			<cd:assignments list="yes" optional="yes">
+				<cd:parameter name="ylabels">
+					<cd:constant type="cd:list"/>
+				</cd:parameter>
+				<cd:parameter name="xlabels">
+					<cd:constant type="cd:list"/>
+				</cd:parameter>
+				<cd:parameter name="ny">
+					<cd:constant type="cd:number"/>
+				</cd:parameter>
+				<cd:parameter name="nx">
+					<cd:constant type="cd:number"/>
+				</cd:parameter>
+				<cd:parameter name="label">
+					<cd:constant type="cd:text"/>
+				</cd:parameter>
+				<cd:parameter name="labelstyle">
+					<cd:constant type="edge"/>
+					<cd:constant type="corner"/>
+				</cd:parameter>
+				<cd:parameter name="groupstype">
+					<cd:constant type="pass" default="yes"/>
+					<cd:constant type="stop"/>
+				</cd:parameter>
+				<cd:parameter name="indices">
+					<cd:constant type="yes"/>
+					<cd:constant type="no" default="yes"/>
+				</cd:parameter>
+				<cd:parameter name="spacing">
+					<cd:constant type="small"/>
+					<cd:constant type="big"/>
+					<cd:constant type="normal" default="yes"/>
+					<cd:constant type="cd:number"/>
+				</cd:parameter>
+			</cd:assignments>
+		</cd:arguments>
+	</cd:command>
+	<cd:command name="karnaugh" type="environment" file="t-karnaugh.mkiv">
+		<cd:arguments>
+			<cd:assignments list="yes" optional="yes">
+				<cd:inherit name="setupkarnaugh" n="1"/>
+			</cd:assignments>
+		</cd:arguments>
+	</cd:command>
+	<cd:command name="karnaughdata" type="environment"
+			 file="t-karnaugh.mkiv">
+	</cd:command>
+	<cd:command name="karnaughtabledata" file="t-karnaugh.mkiv">
+		<cd:arguments>
+			<cd:keywords delimiters="braces" list="yes">
+				<cd:constant type="cd:list"/>
+			</cd:keywords>
+		</cd:arguments>
+	</cd:command>
+	<cd:command name="karnaughminterms" file="t-karnaugh.mkiv">
+		<cd:arguments>
+			<cd:keywords delimiters="braces" list="yes">
+				<cd:constant type="cd:list"/>
+			</cd:keywords>
+		</cd:arguments>
+	</cd:command>
+	<cd:command name="karnaughmaxterms" file="t-karnaugh.mkiv">
+		<cd:arguments>
+			<cd:keywords delimiters="braces" list="yes">
+				<cd:constant type="cd:list"/>
+			</cd:keywords>
+		</cd:arguments>
+	</cd:command>
+	<cd:command name="karnaughgroups" type="environment"
+			 file="t-karnaugh.mkiv">
+	</cd:command>
+	<cd:command name="karnaughnote" file="t-karnaugh.mkiv">
+		<cd:arguments>
+			<cd:keywords delimiters="braces">
+				<cd:constant type="cd:character"/>
+			</cd:keywords>
+			<cd:content/>
+			<cd:keywords delimiters="braces">
+				<cd:constant type="tr"/>
+				<cd:constant type="Tr"/>
+				<cd:constant type="tl"/>
+				<cd:constant type="Tl"/>
+				<cd:constant type="br"/>
+				<cd:constant type="Br"/>
+				<cd:constant type="bl"/>
+				<cd:constant type="Bl"/>
+				<cd:constant type="lb"/>
+				<cd:constant type="lt"/>
+				<cd:constant type="rb"/>
+				<cd:constant type="rt"/>
+				<cd:constant type="r"/>
+				<cd:constant type="b"/>
+			</cd:keywords>
+		</cd:arguments>
+	</cd:command>
+</cd:interface>
+

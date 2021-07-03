@@ -11,6 +11,7 @@
 
 \registerctxluafile{t-karnaugh}{}
 
+
 \startmodule[karnaugh]
 \unprotect
 
@@ -27,8 +28,7 @@ thirddata.karnaugh.setup(utilities.parsers.settings_to_hash([==[#1]==]))}%
 thirddata.karnaugh.start(utilities.parsers.settings_to_hash([==[#1]==]))}%
 \ignorespaces}%
 
-\unexpanded\def\stopkarnaugh{%
-\ctxlua{thirddata.karnaugh.drawMap()}%
+\unexpanded\def\stopkarnaugh{\ctxlua{thirddata.karnaugh.drawMap()}%
 \ignorespaces}%
 
 
@@ -74,11 +74,10 @@ thirddata.karnaugh.setNote([==[#1]==], [==[#2]==], [==[#3]==])}%
 
 
 
-
 \continueifinputfile{t-karnaugh.mkiv}
 
 %\setupbodyfont[8pt] %Looks fine down to 8pt, normal spacing
-%\showframe
+\showframe
 
 \starttext
 
