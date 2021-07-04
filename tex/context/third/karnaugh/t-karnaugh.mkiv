@@ -1,0 +1,142 @@
+%D \module[
+%D         file=t-karnaugh.mkiv,
+%D      version=1.0.0,
+%D        title=Karnaugh,
+%D     subtitle=Draws Karnaugh maps,
+%D       author=VicSanRoPe,
+%D    copyright=VicSanRoPe,
+%D         date=\currentdate,
+%D      license=GNU GPL 2.0]
+
+%C Copyright (C) 2021  VicSanRoPe
+%C
+%C This program is free software: you can redistribute it and/or modify
+%C it under the terms of the GNU General Public License as published by
+%C the Free Software Foundation, either version 2 of the License, or
+%C (at your option) any later version.
+%C
+%C This program is distributed in the hope that it will be useful,
+%C but WITHOUT ANY WARRANTY; without even the implied warranty of
+%C MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%C GNU General Public License for more details.
+%C
+%C You should have received a copy of the GNU General Public License
+%C along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+\writestatus{loading}{Context User Module / Karnaugh}
+\registerctxluafile{t-karnaugh}{}
+
+
+\startmodule[karnaugh]
+\unprotect
+
+
+\unexpanded\def\setupkarnaugh{\dosingleempty\dosetupkarnaugh}%
+\unexpanded\def\dosetupkarnaugh[#1]{\ctxlua{%
+thirddata.karnaugh.setup(utilities.parsers.settings_to_hash([==[#1]==]))}%
+\ignorespaces}%
+
+
+\unexpanded\def\startkarnaugh{\dosingleempty\dostartkarnaugh}%
+\unexpanded\def\dostartkarnaugh[#1]{\ctxlua{%
+thirddata.karnaugh.start(utilities.parsers.settings_to_hash([==[#1]==]))}%
+\ignorespaces}%
+
+\unexpanded\def\stopkarnaugh{\ctxlua{thirddata.karnaugh.drawMap()}%
+\ignorespaces}%
+
+
+\unexpanded\def\startkarnaughdata{\dostartbuffer[kndata]% Buffer name
+[startkarnaughdata][stopkarnaughdata]}% Where it starts and stops
+
+\unexpanded\def\stopkarnaughdata{\ctxlua{%
+thirddata.karnaugh.processData(buffers.getcontent('kndata'))}%
+\ignorespaces}%
+
+
+\unexpanded\def\startkarnaughgroups{\dostartbuffer[kngroups]%
+[startkarnaughgroups][stopkarnaughgroups]}%
+
+\unexpanded\def\stopkarnaughgroups{\ctxlua{%
+thirddata.karnaugh.processGroups(buffers.getcontent('kngroups'))}%
+\ignorespaces}%
+
+
+\unexpanded\def\karnaughtabledata#1{\ctxlua{%
+thirddata.karnaugh.setTableData(%
+utilities.parsers.settings_to_array([==[#1]==]))}%
+\ignorespaces}%
+
+\unexpanded\def\karnaughminterms#1{\ctxlua{%
+thirddata.karnaugh.setMintermsData(%
+utilities.parsers.settings_to_array([==[#1]==]))}%
+\ignorespaces}%
+
+\unexpanded\def\karnaughmaxterms#1{\ctxlua{%
+thirddata.karnaugh.setMaxtermsData(%
+utilities.parsers.settings_to_array([==[#1]==]))}%
+\ignorespaces}%
+
+\unexpanded\def\karnaughnote#1#2#3{\ctxlua{%
+thirddata.karnaugh.setNote([==[#1]==], [==[#2]==], [==[#3]==])}%
+\ignorespaces}%
+
+\protect
+\stopmodule
+
+
+
+
+
+\continueifinputfile{t-karnaugh.mkiv}
+
+%\setupbodyfont[8pt] %Looks fine down to 8pt, normal spacing
+\showframe
+
+\starttext
+
+\placefigure[here, high]{Karnaugh map}{\framed[frame=on]{
+\startkarnaugh[ny=8, nx=8,
+		name=$f_{(I_0,I_1,I_2,I_3,I_4,I_5)}$,
+		ylabels={$I_0$, $I_1$, $I_2$},
+		xlabels={$I_3$, $I_4$, $I_5$},
+		labelstyle=corner, groupstyle=pass,
+		indices=no, spacing=normal]
+	\startkarnaughdata
+		1,	0,	0,	1,	1,	0,	0,	1,
+		0,	1,	1,	0,	0,	1,	1,	0,
+		0,	1,	1,	0,	0,	1,	1,	0,
+		1,	0,	0,	1,	1,	0,	0,	1,
+		1,	0,	0,	1,	1,	0,	0,	1,
+		0,	0,	0,	0,	0,	0,	0,	0,
+		0,	1,	1,	0,	0,	0,	0,	0,
+		1,	0,	0,	1,	1,	0,	0,	1
+	\stopkarnaughdata
+	\startkarnaughgroups
+		A,	,	,	A,	A,	,	,	A,
+		,	C*B,	C-B-,	,	,	B+,	B*,	,
+		,	B,	B,	,	,	B,	B,	,
+		A,	,	,	A,	A,	,	,	A,
+		A,	,	,	A,	A-,	,	,	A-,
+		,	,	,	,	,	,	,	,
+		,	C,	C+,	,	,	,	,	,
+		A,	,	,	A,	A-,	,	,	A+*
+	\stopkarnaughgroups
+	\karnaughnote{A}{$\overbar{I_1} \cdot \overbar{I_4}$}{r}
+	\karnaughnote{B}{$\overbar{I_0} \cdot I_2 \cdot I_5$}{Tr}
+	\karnaughnote{C}
+		{$\overbar{I_1} \cdot I_2 \cdot \overbar{I_3} \cdot I_5$}{Tl}
+\stopkarnaugh}}
+
+\placefigure[here]{Colors!}{
+\startkarnaugh[ny=4, nx=8]
+	\startkarnaughgroups
+		A,	B,	C,	D,	E,	F,	G,	H,
+		I,	J,	K,	L,	M,	N,	O,	P,
+		Q,	R,	S,	T,	U,	V,	W,	X,
+		Y,	Z,	a,	b,	c,	d,	e,	f,
+	\stopkarnaughgroups
+\stopkarnaugh}
+
+\stoptext

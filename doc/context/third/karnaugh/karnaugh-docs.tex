@@ -1,3 +1,18 @@
+%C Copyright (C) 2021  VicSanRoPe
+%C
+%C This program is free software: you can redistribute it and/or modify
+%C it under the terms of the GNU General Public License as published by
+%C the Free Software Foundation, either version 2 of the License, or
+%C (at your option) any later version.
+%C
+%C This program is distributed in the hope that it will be useful,
+%C but WITHOUT ANY WARRANTY; without even the implied warranty of
+%C MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%C GNU General Public License for more details.
+%C
+%C You should have received a copy of the GNU General Public License
+%C along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 \setuppapersize[A4]
 \setupbodyfont[10pt]
 \setupwhitespace[medium]
@@ -18,7 +33,7 @@
 	topspace=1.6cm, bottomspace=1cm, backspace=3cm, cutspace=3cm,
 	header=1.3cm, headerdistance=5mm, footer=1.3cm, footerdistance=5mm]
 \setupinteraction[state=start, color=darkblue,
-  title=Karnaugh,
+  title={ConTeXt - Karnaugh},
   subtitle={ConTeXt module to draw Karnaugh maps},
   author=VicSanRoPe]
 
@@ -97,7 +112,7 @@ draw image (
 		ysized 0.8cm, urcorner Page shifted (-1.5cm,-9cm)) ;
 	draw anchored.urt(textext("\bf VicSanRoPe")
 		ysized 1.2cm,lrcorner Page shifted (-1cm, 5cm)) ;
-	draw anchored.urt(textext("\bf v0.95")
+	draw anchored.urt(textext("\bf v1.0.0")
 		ysized 0.8cm,lrcorner Page shifted (-1cm, 3cm)) ;
 ) withcolor 0.5darkred;
 
@@ -160,15 +175,15 @@ StopPage ;
 
 
 
-
+\blank[force, 1cm]
 \midaligned{\bf Abstract}
 \startnarrower[2*middle]
 This module draws Karnaugh maps containing data (ones, ceros, or anything) and the corresponding groupings these maps have, all with easy to use syntax. It supports larger-than-four variable maps using grey code (and drawing lines between mirrored groups), but can be used with submaps. Lastly, formulas, or any text, can be added to the groups using arrows.
 \stopnarrower
-\blank[2cm]
+\vfill
 \subject{Contents}
 \placecontent
-
+\vfill
 
 
 \pagebreak
@@ -179,6 +194,7 @@ This module draws Karnaugh maps containing data (ones, ceros, or anything) and t
 
 To draw a Karnaugh map, the \type{karnaugh} environment is used, the options specified here override the global options.
 \showsetup[startkarnaugh]
+
 
 The options are set globally with the \type{setupkarnaugh} command.
 \showsetup[setupkarnaugh]

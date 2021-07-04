@@ -1,12 +1,26 @@
+-- Copyright (C) 2021  VicSanRoPe
+--
+-- This program is free software: you can redistribute it and/or modify
+-- it under the terms of the GNU General Public License as published by
+-- the Free Software Foundation, either version 2 of the License, or
+-- (at your option) any later version.
+--
+-- This program is distributed in the hope that it will be useful,
+-- but WITHOUT ANY WARRANTY; without even the implied warranty of
+-- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-- GNU General Public License for more details.
+--
+-- You should have received a copy of the GNU General Public License
+-- along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 if not modules then modules = { } end modules ['t-karnaugh'] = {
-    version   = "0.95",
+    version   = "1.0.0",
     comment   = "Karnaugh",
     author    = "VicSanRoPe",
-    copyright = "VicSanRoPe 2021",
+    copyright = "VicSanRoPe",
     license   = "GNU GPL 2.0"
 }
 
--- TODO: more colors, add option indicesstart=NUMBER for submaps
 
 thirddata = thirddata or { }
 thirddata.karnaugh = {
@@ -14,12 +28,15 @@ thirddata.karnaugh = {
 	labelStyle, -- Varies with the map's size: "corner" or "edge"
 	groupStyle = "pass",
 	scale = 1, -- big=1.75, small=0.8
-	
+
+	errored = false,
+
+	-- Things for drawing, not actually variables
 	rotate = [[rotatedaround((0.5*size, -0.5*size), %s) ]],
 	shift  = [[shifted((%s-1)*size, (1-%s)*size) ]],
 	color  = [[withcolor(%s) withtransparency("darken", 0.85)]],
-	
 	colors = {
+		-- Vivid colors (mine)
 		["A"] = "red",
 		["B"] = "green",
 		["C"] = "blue",
@@ -31,7 +48,22 @@ thirddata.karnaugh = {
 		["I"] = "(0.1, 0.5, 0.9)", -- Light Blue
 		["J"] = "(0.6, 0  , 0.6)", -- Violet
 		["K"] = "(0.5, 0.9, 0.5)", -- Pale green
-		["L"] = "(0.5, 0.3, 0.15)" -- Brown
+		["L"] = "(0.5, 0.3, 0.15)", -- Brown
+		--https://eleanormaclure.files.wordpress.com/2011/03/colour-coding.pdf
+		["M"] = "(0.922, 0.808, 0.169)",
+		["N"] = "(0.439, 0.173, 0.549)",
+		["O"] = "(0.859, 0.412, 0.090)",
+		["P"] = "(0.588, 0.804, 0.902)",
+		["Q"] = "(0.729, 0.110, 0.188)",
+		["R"] = "(0.753, 0.741, 0.498)",
+		["S"] = "(0.373, 0.651, 0.255)",
+		["T"] = "(0.831, 0.522, 0.698)",
+		["U"] = "(0.259, 0.467, 0.714)",
+		["V"] = "(0.875, 0.518, 0.380)",
+		["W"] = "(0.275, 0.200, 0.592)",
+		["X"] = "(0.882, 0.631, 0.102)",
+		["Y"] = "(0.494, 0.082, 0.063)",
+		["Z"] = "(0.910, 0.914, 0.282)",
 	}
 }
 
@@ -55,6 +87,16 @@ function karnaugh.numToGray(num, bits)
 end
 
 
+function karnaugh.warn(msg)
+	print("karnaugh", "> warning    >", msg)
+end
+
+function karnaugh.error(msg)
+	print("karnaugh", "> error      >", msg)
+	kn.errored = true
+	context([[\framedtext[width=fit]{An error ocurred:\par %s}]], msg)
+end
+
 
 function karnaugh.processOpts(content)
 	local opts = {}
@@ -62,15 +104,15 @@ function karnaugh.processOpts(content)
 		if k == "indices" then
 			if v == "on" or v == "yes" then opts.indices = true;
 			elseif v == "off" or v == "no" then opts.indices = false;
-			else error("What is indices="..v.."?") end
+			else kn.warn("Unrecognized value: indices="..v) end
 		elseif k == "labelstyle" then
 			if v == "corner" then opts.labelStyle = "corner"
 			elseif v == "edge" then opts.labelStyle = "edge"
-			else error("What is labelstyle="..v.."?") end
+			else kn.warn("Unrecognized value labelstyle="..v) end
 		elseif k == "groupstyle" then
 			if v == "pass" then opts.groupStyle = "pass"
 			elseif v == "stop" then opts.groupStyle = "stop"
-			else error("What is groupstyle="..v.."?") end
+			else kn.warn("Unrecognized value groupstyle="..v) end
 		elseif k == "ylabels" then
 			opts.vVars = utilities.parsers.settings_to_array(v)
 		elseif k == "xlabels" then
@@ -88,6 +130,8 @@ function karnaugh.processOpts(content)
 			else opts.scale = tonumber(v) end
 		elseif k == "indicesstart" then
 			opts.indicesstart = tonumber(v)
+		else
+			kn.warn("Unrecognized option: "..k)
 		end
 	end
 	return opts
@@ -104,6 +148,8 @@ end
 
 
 function karnaugh.start(content)
+	if kn.started then kn.error(
+		"karnaugh environment inside karnaugh environment") return end
 	kn.started = true;
 
 	local opts = kn.processOpts(content)
@@ -117,7 +163,6 @@ function karnaugh.start(content)
 	kn.groupStyle = opts.groupStyle or kn.opts.groupStyle or "pass"
 	kn.labelStyle = opts.labelStyle or kn.opts.labelStyle or nil
 	kn.scale = opts.scale or kn.opts.scale or 1
-	print(kn.label, kn.scale, opts.scale, kn.opts.scale)
 	kn.indicesstart = opts.indicesstart or kn.opts.indicesstart or 0
 
 	kn.height = opts.height or kn.opts.height or nil
@@ -128,11 +173,13 @@ function karnaugh.start(content)
 
 	-- Just checking things
 	if kn.height and kn.vVars and kn.height ~= 2^#kn.vVars then
-		error("Wrong vertical size!") end
+		kn.error("Unmatching vertical size or labels") end
 	if kn.width and kn.hVars and kn.width ~= 2^#kn.hVars then
-		error("Wrong horizontal size!") end
-	if kn.hVars and not kn.vVars then error("Why just some labels") end
-	if kn.vVars and not kn.hVars then error("Why just some labels") end
+		kn.error("Unmatching horizontal size or labels") end
+	if kn.hVars and not kn.vVars then
+		kn.error("Missing vertical labels") end
+	if kn.vVars and not kn.hVars then
+		kn.error("Missing horizontal labels") end
 
 	-- Generate some optional arguments
 	kn.calculateOptionals()
@@ -161,17 +208,20 @@ function karnaugh.checkArrSize(arr, msg)
 	-- This ignores a trailing comma
 	if #arr < kn.width*kn.height or #arr > kn.width*kn.height+1 or
 			(#arr == kn.width*kn.height+1 and arr[#arr] ~= "") then
-		error("Wrong number of "..msg.." elements, try clearing the global options if they are not needed")
+		kn.error("Wrong number of "..msg.." elements, "..
+			"try clearing the global options if they are not needed")
+		return true
 	end
 end
 
 function karnaugh.processData(buffer)
-	if not kn.started then error("Where is my Karnaugh environment?") end
+	if not kn.started then
+		kn.error("karnaughdata outside environment") return end
 	if kn.width and kn.height then
 		local arr = utilities.parsers.settings_to_array(buffer)
 		for i=1, #arr, 1 do -- Remove leading and trailing spaces
 			arr[i] = arr[i]:gsub("^%s+", ""):gsub("%s+$", "") end
-		kn.checkArrSize(arr, "data")
+		if kn.checkArrSize(arr, "data") then return end
 		local data = {}
 		for y = 1, kn.height, 1 do
 			data[y] = {}
@@ -195,7 +245,7 @@ function karnaugh.processData(buffer)
 				end
 				if not kn.width then kn.width = #data[y]
 				elseif kn.width ~= #data[y] then
-					error("Cannot guess width") end
+					kn.error("Cannot guess data width") return end
 			end
 		end
 		kn.height = #data
@@ -206,7 +256,8 @@ end
 
 
 function karnaugh.setTableData(content)
-	if not kn.started then error("Where is my Karnaugh environment?") end
+	if not kn.started then
+		kn.error("karnaughtabledata outside environment") return end
 	local data = {}
 	if #content == 1 then
 		local str = content[1]
@@ -238,11 +289,13 @@ function karnaugh.setTableData(content)
 end
 
 function karnaugh.setMintermsData(content)
-	if not kn.started then error("Where is my Karnaugh environment?") end
+	if not kn.started then
+		kn.error("karnaughminterms outside environment") return end
 	karnaugh.setTermsData(content, "1", "0")
 end
 function karnaugh.setMaxtermsData(content)
-	if not kn.started then error("Where is my Karnaugh environment?") end
+	if not kn.started then
+		kn.error("karnaughmaxterms outside environment") return end
 	karnaugh.setTermsData(content, "0", "1")
 end
 
@@ -257,8 +310,7 @@ function karnaugh.setTermsData(content, normal, negated)
 					data[y+1][x+1] = normal
 				elseif tonumber(val) - kn.indicesstart >=
 						kn.width*kn.height then
-					error("Invalid minterm/maxterm")
-				end
+					kn.error("Invalid minterm/maxterm") return end
 			end
 		end
 	end
@@ -272,7 +324,8 @@ end
 
 
 function karnaugh.processGroups(buffer)
-	if not kn.started then error("Where is my Karnaugh environment?") end
+	if not kn.started then
+		kn.error("karnaughgroups outside environment") return end
 	local arr = utilities.parsers.settings_to_array(buffer)
 	local grArr, labelArr, sConnArr, dConnArr = {}, {}, {}, {}
 	for i=1, #arr, 1 do
@@ -409,7 +462,8 @@ end
 
 
 function karnaugh.setNote(gr, note, dir)
-	if not kn.started then error("Where is my Karnaugh environment?") end
+	if not kn.started then
+		kn.error("karnaughnote outside environment") return end
 	for y = 1, kn.height, 1 do
 		for x = 1, kn.width, 1 do
 			for g, v in pairs(kn.notes[y][x]) do
@@ -436,7 +490,10 @@ end
 
 
 function karnaugh.drawMap()
-	if not kn.started then error("Where is my Karnaugh environment?") end
+	if kn.started == false then
+		kn.error("stopkarnaugh with no startkarnaugh") end
+	kn.started = false;
+	if kn.errored == true then kn.errored = false return end
 	metafun.start()
 	--metafun("interim bboxmargin := 0;")
 
@@ -445,7 +502,7 @@ function karnaugh.drawMap()
 		-- not that much bigger than with no indices with big spacing
 		metafun("size := %s*1.6*LineHeight;", kn.scale*0.6+0.4)
 	else
-		metafun("size := %s*1.25*LineHeight;", kn.scale)
+		metafun("size := %s*1.3*LineHeight;", kn.scale)
 	end
 	karnaugh.drawGrid()
 	karnaugh.drawData()
@@ -458,10 +515,9 @@ function karnaugh.drawMap()
 	if kn.notes then
 		karnaugh.drawNotes()
 	end
+
 	--metafun("draw bbox currentpicture withpen pencircle scaled 1pt;")
 	metafun.stop()
-
-	kn.started = false;
 end
 
 
