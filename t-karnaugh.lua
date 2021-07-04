@@ -1,5 +1,5 @@
 if not modules then modules = { } end modules ['t-karnaugh'] = {
-    version   = 0.92,
+    version   = "0.95",
     comment   = "Karnaugh",
     author    = "VicSanRoPe",
     copyright = "VicSanRoPe 2021",
@@ -85,6 +85,8 @@ function karnaugh.processOpts(content)
 			elseif v == "small" then opts.scale = 0.8
 			elseif v == "big" then opts.scale = 1.75
 			else opts.scale = tonumber(v) end
+		elseif k == "indicesstart" then
+			opts.indicesstart = tonumber(v)
 		end
 	end
 	return opts
@@ -94,6 +96,7 @@ end
 function karnaugh.setup(content)
 	kn.height,kn.width,kn.vVars,kn.hVars,kn.label = nil,nil,nil,nil,nil
 	kn.indices,kn.groupStyle,kn.labelStyle,kn.scale = false,"pass",nil,1
+	kn.indicesstart = 0
 
 	kn.opts = kn.processOpts(content)
 end
@@ -111,6 +114,7 @@ function karnaugh.start(content)
 	kn.groupStyle = opts.groupStyle or kn.opts.groupStyle or "pass"
 	kn.labelStyle = opts.labelStyle or kn.opts.labelStyle or nil
 	kn.scale = opts.scale or kn.opts.scale or 1
+	kn.indicesstart = opts.indicesstart or kn.opts.indicesstart or 0
 
 	kn.height = opts.height or kn.opts.height or nil
 	kn.width = opts.width or kn.opts.width or nil
@@ -200,11 +204,30 @@ end
 function karnaugh.setTableData(content)
 	if not kn.started then error("Where is my Karnaugh environment?") end
 	local data = {}
+	if #content == 1 then
+		local str = content[1]
+		for i = 1, str:len(), 1 do
+			content[i] = str:sub(i, i)
+		end
+	end
+
+	if not kn.width or not kn.height then
+		local nVars = math.log(#content) / math.log(2)
+		if nVars % 2 == 0 then
+			kn.width, kn.height = nVars/2, nVars/2
+		else
+			kn.width = math.sqrt(2^(nVars+1))
+			kn.height = kn.width / 2
+		end
+		kn.calculateOptionals()
+	end
+
+	kn.checkArrSize(content, "data")
 	for y = 0, kn.height-1, 1 do
 		data[y+1] = {}
 		for x = 0, kn.width-1, 1 do
 			local pos = ((y ~ (y >> 1)) << #kn.hVars) + (x ~ (x >> 1))
-			data[y+1][x+1] = content[pos+1]
+			data[y+1][x+1] = content[pos+1]:gsub("^%s+", ""):gsub("%s+$", "")
 		end
 	end
 	karnaugh.data = data
@@ -226,8 +249,11 @@ function karnaugh.setTermsData(content, normal, negated)
 		for x = 0, kn.width-1, 1 do
 			local pos = ((y ~ (y >> 1)) << #kn.hVars) + (x ~ (x >> 1))
 			for i, val in pairs(content) do
-				if tonumber(val) == pos then
+				if tonumber(val) - kn.indicesstart == pos then
 					data[y+1][x+1] = normal
+				elseif tonumber(val) - kn.indicesstart >=
+						kn.width*kn.height then
+					error("Invalid minterm/maxterm")
 				end
 			end
 		end
@@ -537,6 +563,7 @@ function karnaugh.drawData()
 				local offset = 0
 				if kn.groups then offset = 0.07 end
 				local pos = ((y ~ (y >> 1)) << #kn.hVars) + (x ~ (x >> 1))
+						+ kn.indicesstart
 				metafun([[draw thelabel(textext("{\tfxx %s}"),
 					(%s*size, -%s*size)) withcolor(0.33white);]],
 					pos, x+0.33+offset, y+0.33)
