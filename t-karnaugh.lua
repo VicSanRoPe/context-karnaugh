@@ -55,6 +55,7 @@ function karnaugh.numToGray(num, bits)
 end
 
 
+
 function karnaugh.processOpts(content)
 	local opts = {}
 	for k, v in pairs(content) do
@@ -78,7 +79,7 @@ function karnaugh.processOpts(content)
 			opts.height = tonumber(v)
 		elseif k == "nx" then
 			opts.width = tonumber(v)
-		elseif k == "label" then
+		elseif k == "name" then
 			opts.label = v
 		elseif k == "spacing" then
 			if v == "normal" then opts.scale = 1.0
@@ -109,11 +110,14 @@ function karnaugh.start(content)
 
 	kn.data,kn.groups,kn.notes,kn.conns = nil,nil,nil,nil
 
-
-	kn.indices = opts.indices or kn.opts.indices or false
+	-- I have to compare to nil because it is a boolean
+	if opts.indices==nil and kn.opts.indices==nil then kn.indices = false
+	elseif opts.indices==nil then kn.indices = kn.opts.indices
+	else kn.indices = opts.indices end
 	kn.groupStyle = opts.groupStyle or kn.opts.groupStyle or "pass"
 	kn.labelStyle = opts.labelStyle or kn.opts.labelStyle or nil
 	kn.scale = opts.scale or kn.opts.scale or 1
+	print(kn.label, kn.scale, opts.scale, kn.opts.scale)
 	kn.indicesstart = opts.indicesstart or kn.opts.indicesstart or 0
 
 	kn.height = opts.height or kn.opts.height or nil
@@ -436,7 +440,7 @@ function karnaugh.drawMap()
 	metafun.start()
 	--metafun("interim bboxmargin := 0;")
 
-	if kn.indices and kn.groups then
+	if kn.indices == true and kn.groups then
 		-- More space if the small spacing is selected, and the size is
 		-- not that much bigger than with no indices with big spacing
 		metafun("size := %s*1.6*LineHeight;", kn.scale*0.6+0.4)
@@ -539,9 +543,10 @@ function karnaugh.drawGrid()
 	end
 	
 	--Gray code
-	local graysize = "tfx" -- Indices are small
+	local graysize = "tfx" -- Gray code is small
 	if kn.width > 4 or kn.height > 4 then graysize="tfxx" end -- Smaller
-	if kn.indices and kn.groups then graysize="tfx" end -- There is space
+	if kn.indices == true and kn.groups then
+		graysize="tfx" end -- There actially is space
 	for y = 0, kn.height-1, 1 do
 		metafun([[label.lft(textext("{\%s %s}"), (-0.1*size, -%s*size));]],
 		graysize, kn.numToGray(y, #kn.vVars), (0.5 + y))
@@ -556,10 +561,10 @@ end
 function karnaugh.drawData()
 	for y = 0, kn.height-1, 1 do
 		for x = 0, kn.width-1, 1 do
-			if kn.data and not kn.indices then
+			if kn.data and kn.indices == false then
 				metafun([[label(textext("{%s}"), (%s*size,-%s*size));]],
 					kn.data[y+1][x+1], x+0.5, y+0.5)
-			elseif kn.indices then
+			elseif kn.indices == true then
 				local offset = 0
 				if kn.groups then offset = 0.07 end
 				local pos = ((y ~ (y >> 1)) << #kn.hVars) + (x ~ (x >> 1))

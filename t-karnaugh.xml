@@ -16,7 +16,7 @@
 				<cd:parameter name="nx">
 					<cd:constant type="cd:number"/>
 				</cd:parameter>
-				<cd:parameter name="label">
+				<cd:parameter name="name">
 					<cd:constant type="cd:text"/>
 				</cd:parameter>
 				<cd:parameter name="labelstyle">
@@ -30,6 +30,8 @@
 				<cd:parameter name="indices">
 					<cd:constant type="yes"/>
 					<cd:constant type="no" default="yes"/>
+					<cd:constant type="on"/>
+					<cd:constant type="off"/>
 				</cd:parameter>
 				<cd:parameter name="spacing">
 					<cd:constant type="small"/>

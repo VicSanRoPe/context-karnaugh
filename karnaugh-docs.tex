@@ -17,7 +17,10 @@
 \setuplayout[width=fit, height=fit, margin=1.5cm,
 	topspace=1.6cm, bottomspace=1cm, backspace=3cm, cutspace=3cm,
 	header=1.3cm, headerdistance=5mm, footer=1.3cm, footerdistance=5mm]
-\setupinteraction[state=start,style=, color=]
+\setupinteraction[state=start, color=darkblue,
+  title=Karnaugh,
+  subtitle={ConTeXt module to draw Karnaugh maps},
+  author=VicSanRoPe]
 
 \usemodule[database]
 \defineseparatedlist[TabTABLE][separator=tab, before=\bTABLE,after=\eTABLE,
@@ -110,9 +113,9 @@ StopPage ;
 
 
 \startbuffer[examplebig]
-\startkarnaugh[ny=8, nx=8, label=$f_{(I_0,I_1,I_2,I_3,I_4,I_5)}$,
+\startkarnaugh[ny=8, nx=8, name=$f_{(I_0,I_1,I_2,I_3,I_4,I_5)}$,
                ylabels={$I_0$, $I_1$, $I_2$}, xlabels={$I_3$, $I_4$, $I_5$},
-               labelstyle=corner, groupstyle=pass, indices=no, spacing=normal]
+               labelstyle=corner, groupstyle=pass]
 	\startkarnaughdata
 		1,	0,	0,	1,	1,	0,	0,	1,
 		0,	1,	1,	0,	0,	1,	1,	0,
@@ -204,9 +207,9 @@ The options \type{ny} and \type{nx} are the map's size in number of cells, they 
 
 
 \subsubsection{Name}
-The \type{label} option is some text that is added on top or on the top-left corner of the map, the name of the function could be placed there.
+The \type{name} option is some text that is added on top or on the top-left corner of the map, the name of the function could be placed there.
 \startbuffer[example]
-\startkarnaugh[label=$f(ABC)$,
+\startkarnaugh[name=$f(ABC)$,
 	ylabels={$A$}, xlabels={$B$, $C$}]
 
 \stopkarnaugh
@@ -217,7 +220,7 @@ The \type{label} option is some text that is added on top or on the top-left cor
 \subsubsection{Label style}
 This option specifies whether the input variables are placed in a corner of the map (value: \type{corner}) or at the edges (value: \type{edge}). By default, the \type{corner} style is used for small maps and the \type{edge} style is used for 5 variable maps or larger.
 \startbuffer[example]
-\startkarnaugh[nx=4, ny=2, label=$f(I)$]
+\startkarnaugh[nx=4, ny=2, name=$f(I)$]
 \stopkarnaugh
 \stopbuffer
 \par\midaligned{\startcombination[ny=1, nx=2, location=middle, distance=4em]
@@ -369,7 +372,7 @@ This command fills the map with the elements specified in the comma separated li
 
 The map's size is calculated automatically if no size or labels are given. The elements aren't limited to ceros and ones, they just have to be short. The next is a simple example where the data used is a truth table and the names are longer than ideal.
 \startbuffer[example]
-\startkarnaugh[label=OUT,
+\startkarnaugh[name=OUT,
 		labelstyle=edge,
 		spacing=big,
 		ylabels={EN},
@@ -527,7 +530,7 @@ The following example shows:
 \section{Examples}
 
 \subsection{Sumbaps}
-The following example show how to draw a five variable Karnaugh map for the following function (and minterm list) using the overlay method. It is basically just two Karnaugh maps inside a combination where each map has its label assigned to the remaining input variables and the same letter is only used in both maps if it represents the same group. Additionally the \type{indicesstart} option is used to offset all indices and minterms to match the expected ones.
+The following example show how to draw a five variable Karnaugh map for the following function (and minterm list) using the overlay method. It is basically just two Karnaugh maps inside a combination where each map has its name assigned to the remaining input variables and the same letter is only used in both maps if it represents the same group. Additionally the \type{indicesstart} option is used to offset all indices and minterms to match the expected ones.
 \startformula
 f(X_4,X_3,X_2,X_1,X_0)=
 	\sum(0, 1, 2, 6, 7, 8, 9, 10 , 14, 15, 17, 20, 22, 23, 25, 30, 31)
@@ -537,7 +540,7 @@ f(X_4,X_3,X_2,X_1,X_0)=
 	ylabels={$X_3$, $X_2$}, xlabels={$X_1$, $X_0$},
 	labelstyle=corner, groupstyle=stop]
 \startcombination[nx=1, ny=2]
-	{\startkarnaugh[label={$X_4=0$}]
+	{\startkarnaugh[name={$X_4=0$}]
 		\karnaughminterms{
 			0, 1, 2, 6, 7, 8, 9, 10 , 14, 15}
 		\startkarnaughgroups
@@ -547,7 +550,7 @@ f(X_4,X_3,X_2,X_1,X_0)=
 			B,	D,	,	B,
 		\stopkarnaughgroups
 	\stopkarnaugh}{}
-	{\startkarnaugh[label={$X_4=1$}, indicesstart=16]
+	{\startkarnaugh[name={$X_4=1$}, indicesstart=16]
 		\karnaughminterms{
 			17, 20, 22, 23, 25, 30, 31}
 		\startkarnaughgroups
@@ -558,6 +561,7 @@ f(X_4,X_3,X_2,X_1,X_0)=
 		\stopkarnaughgroups
 	\stopkarnaugh}{}
 \stopcombination
+\setupkarnaugh % Optional: to clear the configuration
 \stopbuffer
 \placeexample
 
@@ -567,12 +571,11 @@ f(X_4,X_3,X_2,X_1,X_0)=
 
 \subsection{Six variable map}
 This example shows a six variable Karnaugh map using the grey code (mirrored) method. All groups have lines joining their mirrored parts, and their associated labels.
-
-\placefigure[here, high, none]{}{%
-\startcombination[nx=1, ny=2, location=middle]
+\setuptyping[before=, after=, tab=6]
+\par\midaligned{\startcombination[nx=1, ny=2, location=middle]
 {\framedtext[width=fit, frame=off]{\typebuffer[examplebig]}}{}
 {\getbuffer[examplebig]}{}
-\stopcombination}
+\stopcombination}\par
 
 
 
