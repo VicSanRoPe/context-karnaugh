@@ -2,7 +2,8 @@
 
 This is a ConTeXt module that draws Karnaugh maps containing data (ones, ceros, or anything) and their groupings, with easy to use syntax. It supports larger than four variable maps; and formulas, or any text, can be added.
 
-The PDF documentation (with the actual maps) is [here](https://github.com/VicSanRoPe/context-karnaugh/doc/context/third/karnaugh/karnaugh-docs.pdf)
+The PDF documentation (with the actual maps) is [here](https://github.com/VicSanRoPe/context-karnaugh/blob/master/doc/context/third/karnaugh/karnaugh-docs.pdf)
+
 
 Options
 ======
