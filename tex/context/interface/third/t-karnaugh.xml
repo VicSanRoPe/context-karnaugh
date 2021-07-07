@@ -20,8 +20,9 @@
 					<cd:constant type="cd:text"/>
 				</cd:parameter>
 				<cd:parameter name="labelstyle">
-					<cd:constant type="edge"/>
 					<cd:constant type="corner"/>
+					<cd:constant type="edge"/>
+					<cd:constant type="bars"/>
 				</cd:parameter>
 				<cd:parameter name="groupstype">
 					<cd:constant type="pass" default="yes"/>
@@ -81,11 +82,10 @@
 	</cd:command>
 	<cd:command name="karnaughnote" file="t-karnaugh.mkiv">
 		<cd:arguments>
-			<cd:keywords delimiters="braces">
+			<cd:keywords>
 				<cd:constant type="cd:character"/>
 			</cd:keywords>
-			<cd:content/>
-			<cd:keywords delimiters="braces">
+			<cd:keywords>
 				<cd:constant type="tr"/>
 				<cd:constant type="Tr"/>
 				<cd:constant type="tl"/>
@@ -100,7 +100,10 @@
 				<cd:constant type="rt"/>
 				<cd:constant type="r"/>
 				<cd:constant type="b"/>
+				<cd:constant type="l"/>
+				<cd:constant type="t"/>
 			</cd:keywords>
+			<cd:content/>
 		</cd:arguments>
 	</cd:command>
 </cd:interface>

@@ -14,7 +14,7 @@
 -- along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 if not modules then modules = { } end modules ['t-karnaugh'] = {
-    version   = "1.0.0",
+    version   = "1.1.0",
     comment   = "Karnaugh",
     author    = "VicSanRoPe",
     copyright = "VicSanRoPe",
@@ -24,12 +24,8 @@ if not modules then modules = { } end modules ['t-karnaugh'] = {
 
 thirddata = thirddata or { }
 thirddata.karnaugh = {
-	indices = false,
-	labelStyle, -- Varies with the map's size: "corner" or "edge"
-	groupStyle = "pass",
-	scale = 1, -- big=1.75, small=0.8
-
 	errored = false,
+	opts = {},
 
 	-- Things for drawing, not actually variables
 	rotate = [[rotatedaround((0.5*size, -0.5*size), %s) ]],
@@ -72,7 +68,6 @@ local kn = karnaugh
 local metafun = context.metafun
 
 
-karnaugh.opts = {}
 
 
 function karnaugh.numToGray(num, bits)
@@ -108,6 +103,7 @@ function karnaugh.processOpts(content)
 		elseif k == "labelstyle" then
 			if v == "corner" then opts.labelStyle = "corner"
 			elseif v == "edge" then opts.labelStyle = "edge"
+			elseif v == "bars" then opts.labelStyle = "bars"
 			else kn.warn("Unrecognized value labelstyle="..v) end
 		elseif k == "groupstyle" then
 			if v == "pass" then opts.groupStyle = "pass"
@@ -369,7 +365,7 @@ end
 
 
 function karnaugh.setNotes(content)
-	local notes = {}
+	local notes, used = {}, false
 	for y = 1, kn.height, 1 do
 		notes[y] = {}
 		for x = 1, kn.width, 1 do
@@ -377,15 +373,14 @@ function karnaugh.setNotes(content)
 			local cell = content[(y-1) * kn.width + x]
 			for gr in cell:gmatch("(%a)%*") do
 				notes[y][x][gr] = {"", ""}
+				used = true
 			end
 		end
 	end
 
-	if #content == 0 then
-		return false
+	if used then
+		karnaugh.notes = notes
 	end
-
-	karnaugh.notes = notes
 end
 
 
@@ -461,7 +456,7 @@ function karnaugh.processGroup(gr, y, x, yf, xf, ch)
 end
 
 
-function karnaugh.setNote(gr, note, dir)
+function karnaugh.setNote(gr, dir, note)
 	if not kn.started then
 		kn.error("karnaughnote outside environment") return end
 	for y = 1, kn.height, 1 do
@@ -521,55 +516,121 @@ function karnaugh.drawMap()
 end
 
 
+function karnaugh.drawCornerStyle()
+	local length;
+	if #kn.vVars >= #kn.hVars then
+		length = 2 + (#kn.vVars-2) / 2
+	else
+		length = 2 + (#kn.hVars-2) / 2
+	end
+	metafun([[draw origin -- (-%s*LineHeight, %s*LineHeight);]],
+		length, length)
+
+	for i = 1, #kn.vVars, 1 do
+		metafun([[label.llft(textext("{%s}"),
+			(-%s*LineHeight, %s*LineHeight));]],
+			--This one looks better with indices, but worse without
+			--kn.vVars[#kn.vVars-i+1], 0.8*i-0.2, 0.8*i+0.1)
+			kn.vVars[#kn.vVars-i+1], 0.8*i, 0.8*i)
+	end
+	for i = 1, #kn.hVars, 1 do
+		metafun([[label.urt(textext("{%s}"),
+			(-%s*LineHeight, %s*LineHeight));]],
+			--kn.hVars[#kn.hVars-i+1], 0.8*i+0.2, 0.8*i)
+			kn.hVars[#kn.hVars-i+1], 0.8*i, 0.8*i)
+	end
+
+	if kn.label then
+		-- Map's label
+		metafun([[label.top(textext("{%s}"), (%s*size, 0.8size));]],
+			kn.label, kn.width/2)
+	end
+end
+
+
+function karnaugh.drawEdgeStyle()
+	local str = ""
+	for i = 1, #kn.hVars, 1 do str = str .. " " .. kn.hVars[i] end
+	metafun([[draw thelabel.top(textext("{%s}"), (0, 0))
+		shifted(%s*size, LineHeight);]],
+		str, kn.width/2)
+	str = ""
+	for i = 1, #kn.vVars, 1 do str = str .. " " .. kn.vVars[i] end
+	metafun([[draw thelabel.top(textext("{%s}"), (0, 0))
+		rotated(90) shifted((-1-%s)*LineHeight, %s*size);]],
+		str, (#kn.vVars/4), -kn.height/2)
+	if kn.label then
+		-- Map's label
+		metafun([[label.ulft(textext("{%s}"), (-0.2size, 0.2size));]],
+			kn.label)
+	end
+end
+
+
+function karnaugh.drawBars(vars, length, dir, flip)
+	for i = 1, #vars, 1 do
+		local start, stop = nil, nil
+		for x = 0, length-1, 1 do
+			local isBar = kn.numToGray(x, #vars):sub(i, i) == "1"
+			if isBar then start = start or x
+			elseif start then stop = x end
+			if i == 1 then start, stop = length/2, length end
+			if start and stop then
+				local vpos = (#vars-i) + 0.6
+				if kn.notes then vpos = vpos + 0.8 end -- Make space for notes
+				local line = "draw (%s*size, %s*size) -- (%s*size, %s*size);"
+				local var = [[label.%s(textext("%s"), (%s*size, %s*size));]]
+				if not flip then
+					metafun(line, start, vpos, stop, vpos)
+					metafun(var, dir, vars[i], (start+stop)/2, vpos)
+					metafun(line, start, vpos-0.1, start, vpos+0.1)
+					metafun(line, stop, vpos-0.1, stop, vpos+0.1)
+				else
+					metafun(line, -vpos, -start, -vpos, -stop)
+					metafun(var, dir, vars[i], -vpos, -(start+stop)/2)
+					metafun(line, -vpos-0.1, -start, -vpos+0.1, -start)
+					metafun(line, -vpos-0.1, -stop, -vpos+0.1, -stop)
+				end
+				start, stop = nil, nil
+				if i == 1 then break end
+			end
+		end
+	end
+	if kn.label then
+		-- Map's label
+		metafun([[label.ulft(textext("{%s}"), (-0.2size, 0.2size));]],
+			kn.label)
+	end
+end
+
+
+function karnaugh.drawBarsStyle(start, stop, vpos, vars)
+	kn.drawBars(kn.hVars, kn.width, "top", false)
+	kn.drawBars(kn.vVars, kn.height, "lft", true)
+end
+
+
+function karnaugh.drawGreyCode()
+	local graysize = "tfx" -- Gray code is small
+	if kn.width > 4 or kn.height > 4 then graysize="tfxx" end -- Smaller
+	if kn.indices == true and kn.groups then
+		graysize="tfx" end -- There actially is space
+	for y = 0, kn.height-1, 1 do
+		metafun([[label.lft(textext("{\%s %s}"), (-0.1*size, -%s*size));]],
+		graysize, kn.numToGray(y, #kn.vVars), (0.5 + y))
+	end
+	for x = 0, kn.width-1, 1 do
+		metafun([[label.top(textext("{\%s %s}"), (%s*size, 0.1*size));]],
+		graysize, kn.numToGray(x, #kn.hVars), (0.5 + x))
+	end
+end
+
 function karnaugh.drawGrid()
 	-- Labels
-	metafun([[pickup pencircle scaled 0.3mm;]])
-	if kn.labelStyle == "corner" then
-		local length;
-		if #kn.vVars >= #kn.hVars then
-			length = 2 + (#kn.vVars-2) / 2
-		else
-			length = 2 + (#kn.hVars-2) / 2
-		end
-		metafun([[draw origin -- (-%s*LineHeight, %s*LineHeight);]],
-			length, length)
-		
-		for i = 1, #kn.vVars, 1 do
-			metafun([[label.llft(textext("{%s}"),
-				(-%s*LineHeight, %s*LineHeight));]],
-				--This one looks better with indices, but worse without
-				--kn.vVars[#kn.vVars-i+1], 0.8*i-0.2, 0.8*i+0.1)
-				kn.vVars[#kn.vVars-i+1], 0.8*i, 0.8*i)
-		end
-		for i = 1, #kn.hVars, 1 do
-			metafun([[label.urt(textext("{%s}"),
-				(-%s*LineHeight, %s*LineHeight));]],
-				--kn.hVars[#kn.hVars-i+1], 0.8*i+0.2, 0.8*i)
-				kn.hVars[#kn.hVars-i+1], 0.8*i, 0.8*i)
-		end
-
-		if kn.label then
-			-- Map's label
-			metafun([[label.top(textext("{%s}"), (%s*size, 0.8size));]],
-				kn.label, kn.width/2)
-		end
-
-	elseif kn.labelStyle == "edge" then
-		local str = ""
-		for i = 1, #kn.hVars, 1 do str = str .. " " .. kn.hVars[i] end
-		metafun([[draw thelabel.top(textext("{%s}"), (0, 0))
-			shifted(%s*size, LineHeight);]],
-			str, kn.width/2)
-		str = ""
-		for i = 1, #kn.vVars, 1 do str = str .. " " .. kn.vVars[i] end
-		metafun([[draw thelabel.top(textext("{%s}"), (0, 0))
-			rotated(90) shifted((-1-%s)*LineHeight, %s*size);]],
-			str, (#kn.vVars/4), -kn.height/2)
-		if kn.label then
-			-- Map's label
-			metafun([[label.ulft(textext("{%s}"), (-0.2size, 0.2size));]],
-				kn.label)
-		end
+	metafun([[pickup pencircle scaled(0.05*size);]])
+	if kn.labelStyle == "corner" then kn.drawCornerStyle()
+	elseif kn.labelStyle == "edge" then kn.drawEdgeStyle()
+	elseif kn.labelStyle == "bars" then kn.drawBarsStyle()
 	end
 	
 	-- Grid
@@ -581,8 +642,7 @@ function karnaugh.drawGrid()
 	end
 	
 	-- Mirror lines
-	local widePen = [[withpen pencircle scaled 0.6mm;]]
-	--metafun([[interim linecap := squared;]])
+	local widePen = [[withpen pencircle scaled(0.10*size);]]
 	if kn.width > 4 then
 		for w = kn.width-4, 4, -4 do
 			metafun([[draw (%s*size, 0.2*size) --
@@ -599,17 +659,8 @@ function karnaugh.drawGrid()
 	end
 	
 	--Gray code
-	local graysize = "tfx" -- Gray code is small
-	if kn.width > 4 or kn.height > 4 then graysize="tfxx" end -- Smaller
-	if kn.indices == true and kn.groups then
-		graysize="tfx" end -- There actially is space
-	for y = 0, kn.height-1, 1 do
-		metafun([[label.lft(textext("{\%s %s}"), (-0.1*size, -%s*size));]],
-		graysize, kn.numToGray(y, #kn.vVars), (0.5 + y))
-	end
-	for x = 0, kn.width-1, 1 do
-		metafun([[label.top(textext("{\%s %s}"), (%s*size, 0.1*size));]],
-		graysize, kn.numToGray(x, #kn.hVars), (0.5 + x))
+	if kn.labelStyle == "corner" or kn.labelStyle == "edge" then
+		kn.drawGreyCode()
 	end
 end
 
@@ -811,20 +862,26 @@ end
 
 
 function karnaugh.directionsdestinations(dir, y, x)
-	    if dir == "tr" then return -1, x
-	elseif dir == "Tr" then return -2, x
-	elseif dir == "tl" then return -1, x-1
-	elseif dir == "Tl" then return -2, x-1
-	elseif dir == "br" then return kn.height+0.7, x
-	elseif dir == "Br" then return kn.height+1.7, x
-	elseif dir == "bl" then return kn.height+0.7, x-1
-	elseif dir == "Bl" then return kn.height+1.7, x-1
-	elseif dir == "lb" then return y, -1
-	elseif dir == "lt" then return y-1, -1
-	elseif dir == "rb" then return y, kn.width+0.7
-	elseif dir == "rt" then return y-1, kn.width+0.7
-	elseif dir == "r"  then return y-0.5, kn.width+0.7
-	elseif dir == "b"  then return kn.height+0.7, x-0.5
+	local goff, soff = 0, 0
+	if kn.labelStyle == "bars" then
+		goff, soff = -0.6, -0.3 end -- grey offset and side offset
+
+	    if dir == "tr" then return -1-goff, x
+	elseif dir == "Tr" then return -2-goff, x
+	elseif dir == "tl" then return -1-goff, x-1
+	elseif dir == "Tl" then return -2-goff, x-1
+	elseif dir == "br" then return kn.height+0.7+soff, x
+	elseif dir == "Br" then return kn.height+1.7+soff, x
+	elseif dir == "bl" then return kn.height+0.7+soff, x-1
+	elseif dir == "Bl" then return kn.height+1.7+soff, x-1
+	elseif dir == "lb" then return y, -1-goff
+	elseif dir == "lt" then return y-1, -1-goff
+	elseif dir == "rb" then return y, kn.width+0.7+soff
+	elseif dir == "rt" then return y-1, kn.width+0.7+soff
+	elseif dir == "r"  then return y-0.5, kn.width+0.7+soff
+	elseif dir == "b"  then return kn.height+0.7+soff, x-0.5
+	elseif dir == "l"  then return y-0.5, -1-goff
+	elseif dir == "t"  then return -1-goff, x-0.5
 	end
 end
 

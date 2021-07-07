@@ -1,6 +1,6 @@
 %D \module[
 %D         file=t-karnaugh.mkiv,
-%D      version=1.0.0,
+%D      version=1.1.0,
 %D        title=Karnaugh,
 %D     subtitle=Draws Karnaugh maps,
 %D       author=VicSanRoPe,
@@ -78,7 +78,7 @@ thirddata.karnaugh.setMaxtermsData(%
 utilities.parsers.settings_to_array([==[#1]==]))}%
 \ignorespaces}%
 
-\unexpanded\def\karnaughnote#1#2#3{\ctxlua{%
+\unexpanded\def\karnaughnote[#1][#2]#3{\ctxlua{%
 thirddata.karnaugh.setNote([==[#1]==], [==[#2]==], [==[#3]==])}%
 \ignorespaces}%
 
@@ -123,14 +123,16 @@ thirddata.karnaugh.setNote([==[#1]==], [==[#2]==], [==[#3]==])}%
 		,	C,	C+,	,	,	,	,	,
 		A,	,	,	A,	A-,	,	,	A+*
 	\stopkarnaughgroups
-	\karnaughnote{A}{$\overbar{I_1} \cdot \overbar{I_4}$}{r}
-	\karnaughnote{B}{$\overbar{I_0} \cdot I_2 \cdot I_5$}{Tr}
-	\karnaughnote{C}
-		{$\overbar{I_1} \cdot I_2 \cdot \overbar{I_3} \cdot I_5$}{Tl}
+	\karnaughnote[A][r]{$\overbar{I_1} \cdot \overbar{I_4}$}
+	\karnaughnote[B][tr]{$\overbar{I_0} \cdot I_2 \cdot I_5$}
+	\karnaughnote[C][tl]
+		{$\overbar{I_1} \cdot I_2 \cdot \overbar{I_3} \cdot I_5$}
 \stopkarnaugh}}
 
+
+
 \placefigure[here]{Colors!}{
-\startkarnaugh[ny=4, nx=8]
+\startkarnaugh[ny=4, nx=8, labelstyle=bars]
 	\startkarnaughgroups
 		A,	B,	C,	D,	E,	F,	G,	H,
 		I,	J,	K,	L,	M,	N,	O,	P,
@@ -138,5 +140,35 @@ thirddata.karnaugh.setNote([==[#1]==], [==[#2]==], [==[#3]==])}%
 		Y,	Z,	a,	b,	c,	d,	e,	f,
 	\stopkarnaughgroups
 \stopkarnaugh}
+
+\page
+
+\placefigure[here]{Bars!}{
+\startkarnaugh[ny=4, nx=8, name=$F(I)$, labelstyle=bars]
+	\startkarnaughdata
+		0,	0,	0,	0,	0,	0,	0,	0,
+		1,	0,	1,	1,	1,	1,	0,	X,
+		0,	1,	X,	X,	X,	X,	1,	0,
+		0,	1,	1,	0,	0,	1,	1,	0,
+	\stopkarnaughdata
+	\startkarnaughgroups
+		,	,	,	,	,	,	,	,
+		A*,	,	B,	B,	B,	B*,	,	A,
+		,	C,	BC,	B,	B,	BC,	C*,	,
+		,	C,	C+,	,	,	C-,	C,	,
+	\stopkarnaughgroups
+	\karnaughnote[A][l]{A}
+	\karnaughnote[B][tr]{B}
+	\karnaughnote[C][rt]{C}
+\stopkarnaugh}
+
+\def\term#1#2{\overset{\text{\tfa #1}}{\overbrace{#2}}}
+
+\placeformula\startformula
+F(I) =
+  \term{A}{\overbar{I_0} \cdot I_1 \cdot \overbar{I_3} \cdot \overbar{I_4}}
++ \term{B}{I_1 \cdot I_3}
++ \term{C}{I_0 \cdot I_4}
+\stopformula
 
 \stoptext

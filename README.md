@@ -2,7 +2,9 @@
 
 This is a ConTeXt module that draws Karnaugh maps containing data (ones, ceros, or anything) and their groupings, with easy to use syntax. It supports larger than four variable maps; and formulas, or any text, can be added.
 
-The PDF documentation (with the actual maps) is [here](https://github.com/VicSanRoPe/context-karnaugh/doc/context/third/karnaugh/karnaugh-docs.pdf)
+The PDF documentation (with the actual maps) is [here](https://github.com/VicSanRoPe/context-karnaugh/blob/master/doc/context/third/karnaugh/karnaugh-docs.pdf)
+
+
 
 Options
 ======
@@ -21,7 +23,7 @@ The options are set globally with the `setupkarnaugh` command.
 	ny = NUMBER
 	nx = NUMBER
 	name = TEXT
-	labelstyle = edge corner
+	labelstyle = edge corner bars
 	groupstype = pass stop
 	indices = yes no on off
 	spacing = small big normal NUMBER
@@ -31,18 +33,18 @@ The options are set globally with the `setupkarnaugh` command.
 
 * The options `ylabels` and `xlabels` are the input variables used for the map, they are written as a list, and math mode is usually used for each individual element. `xlabels` refers to the variables at the top of the map, and the last element is the least significant variable (for indices and minterms). `ylabels` are at the left, its first element is the most significant variable. If these labels are not specified, then the labels will be I<sub>0</sub> , I<sub>1</sub> , I<sub>2</sub>, and so on.
 
-* The options `ny` and `nx` are the map’s size in number of cells, they are calculated automatically when labels are specified, and if no size or labels are specified but there is data, the size of the map is guessed with the newline characters. Thus, the following produces an empty map with default labels.
+* The options `ny` and `nx` are the map’s size in number of cells, they are calculated automatically when labels are specified, and if no size or labels are specified but there is data, the size of the map is guessed with the newline characters.
 
 * The `name` option is some text that is added on top or on the top-left corner of the map, the name of the function could be placed there.
 
-* The `labelstyle` option specifies whether the input variables are placed in a corner of the map (value: corner) or at the edges (value: edge). By default, the corner style is used for small maps and the edge style is used for 5 variable maps or larger.
+* The `labelstyle` option specifies whether the input variables are placed in a corner of the map (value: `corner`) or at the edges (value: `edge`), or if they are placed on top of bars which represent when the variable's value is 1 (value: `bars`). By default, the `corner` style is used for small maps and the `edge` style is used for 5 variable maps or larger.
 
-* The `groupstyle` option changes how the group’s lines are drawn, if its value is pass (the default), the lines continue for a bit outside of the map. If it is stop, they will not, which might be preferred when making a combination of maps using the overlay method, to mark that some adjacent groups are not connected, but the effect is minimal.
+* The `groupstyle` option changes how the group’s lines are drawn, if its value is `pass` (the default), the lines continue for a bit outside of the map. If it is `stop`, they will not, which might be preferred when making a combination of maps using the overlay method, to mark that some adjacent groups are not connected, but the effect is minimal.
 
 * If the `indices` option is set to yes or on, it will draw a small number on every cell with the value of the input variables in decimal. If groups are also being drawn, the map’s spacing will be enlarged to acomodate both things and the data.
 
 * The `spacing` option simply increases or decreases the whitespace around every cell’s data.
-Please note that the document’s font size affects the map’s size, such that is looks the same, just smaller or bigger, always with the same font as the main text. To make the maps have a constant size, surround them with \scale. spacing can be a number too, adjust both of these to get the proportions you want.
+Please note that the document’s font size affects the map’s size, such that is looks the same, just smaller or bigger, always with the same font as the main text. To make the maps have a constant size, surround them with `\scale`. spacing can be a number too, adjust both of these to get the proportions you want.
 
 
 
@@ -92,11 +94,9 @@ Inside of this environment the data is placed as a comma separated list, prefera
 Groups and other data
 ========
 
-This data is input with the map syntax because presumably the map is already drawn with the
-ones and ceros, and drawing the groups “in-place” is much easier than calculating the coordinates
-of the desired groups.
+This data is input with the map syntax because presumably the map is already drawn with the ones and ceros, and drawing the groups “in-place” is much easier than calculating the coordinates of the desired groups.
 ```
-\startkarnaughgroups ... \stopkarnaughgroups``
+\startkarnaughgroups ... \stopkarnaughgroups
 ```
 Inside of this environment various types of data are placed as a comma separated list with as many elements as there are cells in the map. Any cell may contain various instances of any of the information types mentioned here.
 
@@ -104,7 +104,7 @@ Inside of this environment various types of data are placed as a comma separated
 
 Groups
 -------
-Groups are input by inserting a letter (one per group) on every cell the group covers. The way they are drawn is handled automatically. The first few uppercase letters have colors assigned to them. The following example shows three groups: at the corners, the edges, and in the middle.
+Groups are input by inserting a letter (one per group) on every cell the group covers. The way they are drawn is handled automatically. The uppercase letters have colors assigned to them. The following example shows three groups: at the corners, the edges, and in the middle.
 ```tex
 \startkarnaugh[ny=4, nx=4]
 	\startkarnaughgroups
@@ -122,14 +122,17 @@ Notes
 -------
 After drawing a Karnaugh map, it is useful to know which term of the produced formula represents each group. These can be drawn as text with arrows coming from the desired group.
 ```
-\karnaughnote {...}{...}{...}
+\karnaughnote [...][...]{...}
 	CHARACTER
-	CONTENT
 	tr Tr tl Tl br Br bl Bl lb lt rb rt r b
+	CONTENT
 ```
-The base of the arrow is specified in the `karnaughgroups` environment as an asterisk after the group it represents, and the remaining data is specified using the karnaughnote command. The first argument is the character assigned to the group, the second is the text to be added to the map, and the third is one of the specified directions the arrow may point to.
+The base of the arrow is specified in the `karnaughgroups` environment as an asterisk after the group it represents, and the remaining data is specified using the `karnaughnote` command.
+The first argument is the character assigned to the group, the second is one of the specified directions the arrow may point to, and the third is the text to be added to the map.
 
 The first letter of the direction is where it will mainly point towards, with `t` meaning top, `b` meaning bottom, `l` meaning left, and `r` meaning right; if it is uppercase it will be further separated from the map (for two rows of text, for example). The second letter (if present) will be a slight offset to the desired side, mainly to make the arrow not overlap with the grey code to the top and left. The arrows look better when they come out of a group’s corner.
+
+If the `labelstyle` option is `bars` and there are notes, the bars will be spaced further aprart from the map to make space for short text.
 
 ```tex
 \startkarnaugh[ny=4, nx=4]
@@ -139,9 +142,9 @@ The first letter of the direction is where it will mainly point towards, with `t
 		,	C,	C*,	,
 		A*,	,	,	A,
 	\stopkarnaughgroups
-	\karnaughnote{A}{A's note}{b}
-	\karnaughnote{B}{B's note}{Tr}
-	\karnaughnote{C}{C's note}{rb}
+	\karnaughnote[A][b]{A's note}
+	\karnaughnote[B][Tr]{B's note}
+	\karnaughnote[C][rb]{C's note}
 \stopkarnaugh
 ```
 
