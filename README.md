@@ -5,7 +5,6 @@ This is a ConTeXt module that draws Karnaugh maps containing data (ones, ceros, 
 The PDF documentation (with the actual maps) is [here](https://github.com/VicSanRoPe/context-karnaugh/blob/master/doc/context/third/karnaugh/karnaugh-docs.pdf)
 
 
-
 Options
 ======
 
