@@ -97,12 +97,8 @@ thirddata.karnaugh.setNote([==[#1]==], [==[#2]==], [==[#3]==])}%
 \starttext
 
 \placefigure[here, high]{Karnaugh map}{\framed[frame=on]{
-\startkarnaugh[ny=8, nx=8,
-		name=$f_{(I_0,I_1,I_2,I_3,I_4,I_5)}$,
-		ylabels={$I_0$, $I_1$, $I_2$},
-		xlabels={$I_3$, $I_4$, $I_5$},
-		labelstyle=corner, groupstyle=pass,
-		indices=no, spacing=normal]
+\startkarnaugh[ny=8, nx=8, name=$f(I)$,
+		labelstyle=corner, groupstyle=pass]
 	\startkarnaughdata
 		1,	0,	0,	1,	1,	0,	0,	1,
 		0,	1,	1,	0,	0,	1,	1,	0,
@@ -123,10 +119,10 @@ thirddata.karnaugh.setNote([==[#1]==], [==[#2]==], [==[#3]==])}%
 		,	C,	C+,	,	,	,	,	,
 		A,	,	,	A,	A-,	,	,	A+*
 	\stopkarnaughgroups
-	\karnaughnote[A][r]{$\overbar{I_1} \cdot \overbar{I_4}$}
-	\karnaughnote[B][tr]{$\overbar{I_0} \cdot I_2 \cdot I_5$}
-	\karnaughnote[C][tl]
-		{$\overbar{I_1} \cdot I_2 \cdot \overbar{I_3} \cdot I_5$}
+	\karnaughnote[A][r]{$\overbar{I_0} \cdot \overbar{I_3}$}
+	\karnaughnote[B][Tr]{$I_0 \cdot I_3 \cdot \overbar{I_5}$}
+	\karnaughnote[C][Tl]
+		{$I_0 \cdot \overbar{I_2} \cdot I_3 \cdot \overbar{I_4}$}
 \stopkarnaugh}}
 
 

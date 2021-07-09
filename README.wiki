@@ -1,5 +1,7 @@
 This is a ConTeXt module that draws Karnaugh maps containing data (ones, ceros, or anything) and their groupings, with easy to use syntax. It supports larger than four variable maps; and formulas, or any text, can be added.
 
+The download page is [https://modules.contextgarden.net/cgi-bin/module.cgi/ruid=3120012435/action=view/id=111 here]
+
 The PDF documentation (with the actual maps) is [https://github.com/VicSanRoPe/context-karnaugh/blob/master/doc/context/third/karnaugh/karnaugh-docs.pdf here]
 
 = Options =

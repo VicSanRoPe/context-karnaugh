@@ -1,17 +1,10 @@
 %C Copyright (C) 2021  VicSanRoPe
 %C
-%C This program is free software: you can redistribute it and/or modify
-%C it under the terms of the GNU General Public License as published by
-%C the Free Software Foundation, either version 2 of the License, or
-%C (at your option) any later version.
-%C
-%C This program is distributed in the hope that it will be useful,
-%C but WITHOUT ANY WARRANTY; without even the implied warranty of
-%C MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-%C GNU General Public License for more details.
-%C
-%C You should have received a copy of the GNU General Public License
-%C along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%C This work is licensed under the
+%C Creative Commons Attribution-ShareAlike 4.0 International License.
+%C To view a copy of this license, visit
+%C http://creativecommons.org/licenses/by-sa/4.0/ or send a letter to
+%C Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
 
 \setuppapersize[A4]
 \setupbodyfont[10pt]
@@ -63,66 +56,8 @@
 \stopcombination}\par}
 
 
-
-% This is straight from the module documentation "preset", a little modified
-\startuseMPgraphic{cover}
-StartPage;
-color local_one  ; local_one   := (0, .2, 0.8);
-color local_two  ; local_two   := (.2, .8, .2);
-color local_three; local_three := black;
-color local_four ; local_four  := 0.5*white;
-
-numeric width  ; width  := bbwidth  Page ;
-numeric height ; height := bbheight Page ;
-u := width/400 ;
-
-def a_module (expr dx, dy) =
-	picture p ; p := image (
-		ddy := 0 ; sx := 60u ;
-		for i=1 upto (4 randomized 2) :
-			sy := 7u randomized 3u ;
-			fill unitsquare xyscaled(sx,sy) shifted (0,ddy)
-				withcolor local_two ;
-			ddy := ddy + sy + 4u ;
-		endfor ;
-	) ;
-	p := p shifted (dx,dy) shifted - center p ;
-	fill boundingbox p enlarged 8u withcolor local_four ;
-	fill boundingbox p enlarged 4u withcolor local_one ;
-	draw p ;
-enddef ;
-
-set_grid(width, height, width/15, height/15) ;
-
-forever:
-	if new_on_grid(uniformdeviate width,uniformdeviate height):
-		a_module(dx,dy) ;
-	fi ;
-	exitif grid_full ;
-endfor ;
-
-picture p ;
-
-draw image (
-	draw anchored.top(textext("\bf\CONTEXT")
-		ysized 3.7cm, (OverlayWidth/2,OverlayHeight-1.5cm)) ;
-	draw anchored.urt(textext("\bf\type{Karnaugh}")
-		ysized 2.5cm, urcorner Page shifted (-1.5cm,-6cm)) ;
-	draw anchored.urt(textext("\bf user module")
-		ysized 0.8cm, urcorner Page shifted (-1.5cm,-9cm)) ;
-	draw anchored.urt(textext("\bf VicSanRoPe")
-		ysized 1.2cm,lrcorner Page shifted (-1cm, 5cm)) ;
-	draw anchored.urt(textext("\bf v1.1.0")
-		ysized 0.8cm,lrcorner Page shifted (-1cm, 3cm)) ;
-) withcolor 0.5darkred;
-
-fill fullsquare smoothed(0.1) yscaled(12cm) xscaled(13cm)
-	shifted(OverlayWidth/2,12.5cm) withcolor(white);
-draw fullsquare smoothed(0.1) yscaled(12cm) xscaled(13cm)
-	shifted(OverlayWidth/2,12.5cm) withcolor(0.8blue)
-	withpen pencircle scaled(2mm);
-StopPage ;
-\stopuseMPgraphic
+% New cover with... lua
+\ctxlua{require("karnaugh-docs-cover")}
 \defineoverlay[cover][\useMPgraphic{cover}]
 
 
@@ -184,7 +119,8 @@ This module draws Karnaugh maps containing data (ones, ceros, or anything) and t
 \subject{Contents}
 \placecontent
 \vfill
-
+\noindentation Licence of the document: \externalfigure[https://mirrors.creativecommons.org/presskit/buttons/80x15/png/by-sa.png][width=2cm]
+\hfill Licence of code examples: \externalfigure[https://mirrors.creativecommons.org/presskit/buttons/80x15/png/cc-zero.png][width=2cm]
 
 \pagebreak
 

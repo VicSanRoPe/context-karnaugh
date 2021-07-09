@@ -11,11 +11,13 @@ Options
 
 To draw a Karnaugh map, the `karnaugh` environment is used, the options specified here
 override the global options.
+
 ```
 \startkarnaugh [..,..=..,..] ... \stopkarnaugh
 ```
 
 The options are set globally with the `setupkarnaugh` command.
+
 ```
 \setupkarnaugh [..,..=..,..]
 	ylabels = LIST
@@ -53,6 +55,7 @@ Data input
 =======
 As a list
 -------
+
 ```
 \karnaughtabledata {...,...}
 ```
@@ -64,7 +67,9 @@ This command fills the map with the elements specified in the comma separated li
 \karnaughminterms {...,...}
 \karnaughmaxterms {...,...}
 ```
+
 These commands place ones or ceros (respectively) on the specified locations (written as a list of the decimal values of the input variables) and then fill the rest of the map with the opposite symbol.
+
 ```tex
 \startkarnaugh[ylabels={A}, xlabels={B}]
 	\karnaughminterms{0, 3}
@@ -74,10 +79,13 @@ These commands place ones or ceros (respectively) on the specified locations (wr
 
 As a map
 -------
+
 ```
 \startkarnaughdata ... \stopkarnaughdata
 ```
+
 Inside of this environment the data is placed as a comma separated list, preferably with newlines at every row, in the same positions as they will appear on the map. A trailing comma is ignored, and cells may be left empty.
+
 ```tex
 \startkarnaugh[ylabels={d, c}, xlabels={b, a}]
 	\startkarnaughdata
@@ -95,9 +103,11 @@ Groups and other data
 ========
 
 This data is input with the map syntax because presumably the map is already drawn with the ones and ceros, and drawing the groups “in-place” is much easier than calculating the coordinates of the desired groups.
+
 ```
 \startkarnaughgroups ... \stopkarnaughgroups
 ```
+
 Inside of this environment various types of data are placed as a comma separated list with as many elements as there are cells in the map. Any cell may contain various instances of any of the information types mentioned here.
 
 
@@ -105,6 +115,7 @@ Inside of this environment various types of data are placed as a comma separated
 Groups
 -------
 Groups are input by inserting a letter (one per group) on every cell the group covers. The way they are drawn is handled automatically. The uppercase letters have colors assigned to them. The following example shows three groups: at the corners, the edges, and in the middle.
+
 ```tex
 \startkarnaugh[ny=4, nx=4]
 	\startkarnaughgroups
@@ -121,12 +132,14 @@ Groups are input by inserting a letter (one per group) on every cell the group c
 Notes
 -------
 After drawing a Karnaugh map, it is useful to know which term of the produced formula represents each group. These can be drawn as text with arrows coming from the desired group.
+
 ```
 \karnaughnote [...][...]{...}
 	CHARACTER
 	tr Tr tl Tl br Br bl Bl lb lt rb rt r b
 	CONTENT
 ```
+
 The base of the arrow is specified in the `karnaughgroups` environment as an asterisk after the group it represents, and the remaining data is specified using the `karnaughnote` command.
 The first argument is the character assigned to the group, the second is one of the specified directions the arrow may point to, and the third is the text to be added to the map.
 

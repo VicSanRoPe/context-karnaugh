@@ -185,12 +185,19 @@ end
 function karnaugh.calculateOptionals()
 	if not kn.height and kn.vVars then kn.height = 2^#kn.vVars end
 	if not kn.width  and kn.hVars then kn.width  = 2^#kn.hVars end
+
+	local vVarsSize = math.floor(0.5 + math.log(kn.height)/math.log(2))
+	local hVarsSize = math.floor(0.5 + math.log(kn.width)/math.log(2))
 	if not kn.vVars and kn.height then kn.vVars = {}
-		for i=1, math.log(kn.height)/math.log(2), 1 do
-			kn.vVars[i] = "$I_{"..(i-1).."}$" end end
+		for i=1, vVarsSize, 1 do
+			kn.vVars[i] = "$I_{"..(vVarsSize+hVarsSize-i).."}$"
+		end
+	end
 	if not kn.hVars and kn.width then kn.hVars = {}
-		for i=1, math.log(kn.width)/math.log(2), 1 do
-			kn.hVars[i] = "$I_{"..(i+(#kn.vVars)-1).."}$" end end
+		for i=1, hVarsSize, 1 do
+			kn.hVars[i] = "$I_{"..(hVarsSize-i).."}$"
+		end
+	end
 
 	-- Dynamic optional settings
 	if not kn.labelStyle and kn.hVars then
