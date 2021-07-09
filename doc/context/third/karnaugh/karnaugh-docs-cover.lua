@@ -124,7 +124,7 @@ context([[
 			ysized 0.8cm, urcorner Page shifted (-1.5cm,-9cm)) ;
 		draw anchored.urt(textext("\bf VicSanRoPe")
 			ysized 1.2cm,lrcorner Page shifted (-1cm, 5cm)) ;
-		draw anchored.urt(textext("\bf v1.1.0")
+		draw anchored.urt(textext("\bf v1.1.1")
 			ysized 0.8cm,lrcorner Page shifted (-1cm, 3cm)) ;
 	) withcolor white;
 

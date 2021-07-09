@@ -32,7 +32,7 @@ The options are set globally with the `setupkarnaugh` command.
 ```
 
 
-* The options `ylabels` and `xlabels` are the input variables used for the map, they are written as a list, and math mode is usually used for each individual element. `xlabels` refers to the variables at the top of the map, and the last element is the least significant variable (for indices and minterms). `ylabels` are at the left, its first element is the most significant variable. If these labels are not specified, then the labels will be I<sub>0</sub> , I<sub>1</sub> , I<sub>2</sub>, and so on.
+* The options `ylabels` and `xlabels` are the input variables used for the map, they are written as a list, and math mode is usually used for each individual element. `xlabels` refers to the variables at the top of the map, and the last element is the least significant variable (for indices and minterms). `ylabels` are at the left, its first element is the most significant variable. If these labels are not specified, then the labels will be I<sub>5</sub> , I<sub>4</sub> , ... , I<sub>0</sub>, and so on.
 
 * The options `ny` and `nx` are the map’s size in number of cells, they are calculated automatically when labels are specified, and if no size or labels are specified but there is data, the size of the map is guessed with the newline characters.
 
@@ -135,7 +135,7 @@ After drawing a Karnaugh map, it is useful to know which term of the produced fo
 ```
 \karnaughnote [...][...]{...}
 	CHARACTER
-	tr Tr tl Tl br Br bl Bl lb lt rb rt r b
+	tr Tr tl Tl br Br bl Bl lb lt rb rt t b l r
 	CONTENT
 ```
 
@@ -144,7 +144,7 @@ The first argument is the character assigned to the group, the second is one of 
 
 The first letter of the direction is where it will mainly point towards, with `t` meaning top, `b` meaning bottom, `l` meaning left, and `r` meaning right; if it is uppercase it will be further separated from the map (for two rows of text, for example). The second letter (if present) will be a slight offset to the desired side, mainly to make the arrow not overlap with the grey code to the top and left. The arrows look better when they come out of a group’s corner.
 
-If the `labelstyle` option is `bars` and there are notes, the bars will be spaced further aprart from the map to make space for short text.
+If the `labelstyle` option is `bars` and there are notes, the bars will be spaced further apart from the map to make space for short text.
 
 ```tex
 \startkarnaugh[ny=4, nx=4]

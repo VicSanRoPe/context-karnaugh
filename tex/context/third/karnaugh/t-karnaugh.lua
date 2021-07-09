@@ -14,7 +14,7 @@
 -- along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 if not modules then modules = { } end modules ['t-karnaugh'] = {
-    version   = "1.1.0",
+    version   = "1.1.1",
     comment   = "Karnaugh",
     author    = "VicSanRoPe",
     copyright = "VicSanRoPe",
@@ -186,14 +186,14 @@ function karnaugh.calculateOptionals()
 	if not kn.height and kn.vVars then kn.height = 2^#kn.vVars end
 	if not kn.width  and kn.hVars then kn.width  = 2^#kn.hVars end
 
-	local vVarsSize = math.floor(0.5 + math.log(kn.height)/math.log(2))
-	local hVarsSize = math.floor(0.5 + math.log(kn.width)/math.log(2))
-	if not kn.vVars and kn.height then kn.vVars = {}
+	if not kn.vVars and not kn.hVars and kn.height and kn.width then
+		local vVarsSize = math.floor(0.5 + math.log(kn.height)/math.log(2))
+		local hVarsSize = math.floor(0.5 + math.log(kn.width)/math.log(2))
+		kn.vVars = {}
 		for i=1, vVarsSize, 1 do
 			kn.vVars[i] = "$I_{"..(vVarsSize+hVarsSize-i).."}$"
 		end
-	end
-	if not kn.hVars and kn.width then kn.hVars = {}
+		kn.hVars = {}
 		for i=1, hVarsSize, 1 do
 			kn.hVars[i] = "$I_{"..(hVarsSize-i).."}$"
 		end
